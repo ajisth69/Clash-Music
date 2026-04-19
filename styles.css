@@ -492,12 +492,16 @@ body.cursor-hover .cursor-ring {
   border-radius: var(--radius-lg);
 }
 
-.np-info { text-align: center; }
+.np-info { text-align: center; width: 100%; max-width: 100%; padding: 0 10px; }
 .np-title {
   font-family: var(--font-display); font-size: 1.4rem;
   font-weight: 700; letter-spacing: -0.3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.np-artist { font-size: 0.9rem; color: var(--text-secondary); margin-top: 4px; }
+.np-artist { 
+  font-size: 0.9rem; color: var(--text-secondary); margin-top: 4px; 
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 
 .np-progress { width: 100%; }
 .np-seek {
