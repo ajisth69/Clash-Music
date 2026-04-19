@@ -227,10 +227,25 @@ export function addToPlaylist(playlistId, song) {
   const playlist = pList.find(p => p.id === playlistId);
   if (!playlist) return false;
   
+  if (playlist.songs.length >= 50) return 'full';
+  
   // Prevent strict duplicates in the same playlist
-  if (playlist.songs.some(s => s.id === song.id)) return false;
+  if (playlist.songs.some(s => s.id === song.id)) return 'duplicate';
   
   playlist.songs.push(song);
   writeJSON(KEYS.PLAYLISTS, pList);
-  return true;
+  return 'added';
+}
+
+export function importPlaylist(name, songsArray) {
+  if (!name || !songsArray?.length) return null;
+  const pList = getPlaylists();
+  const newPlaylist = {
+    id: 'pl_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+    name: name.trim(),
+    songs: songsArray.slice(0, 50)
+  };
+  pList.push(newPlaylist);
+  writeJSON(KEYS.PLAYLISTS, pList);
+  return newPlaylist;
 }

@@ -876,6 +876,19 @@ body.cursor-hover .cursor-ring {
 .song-card__playlist-btn:hover { color: var(--accent); background: rgba(139,108,255,0.2); }
 .song-card:hover .song-card__playlist-btn { opacity: 1; transform: scale(1); }
 
+/* Share Card Button */
+.song-card__share-btn {
+  position: absolute; right: 7px; top: 73px; /* Below the playlist button */
+  width: 28px; height: 28px; border-radius: 50%; border: none;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(6px);
+  color: rgba(255,255,255,0.6); font-size: 13px;
+  display: grid; place-items: center; cursor: pointer;
+  opacity: 0; transform: scale(0.7); z-index: 5;
+  transition: all 0.25s var(--ease);
+}
+.song-card__share-btn:hover { color: var(--accent); background: rgba(139,108,255,0.2); }
+.song-card:hover .song-card__share-btn { opacity: 1; transform: scale(1); }
+
 /* Playlists Modal Additions */
 .playlist-create {
   display: flex; gap: 8px; margin-bottom: 16px;

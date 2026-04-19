@@ -217,6 +217,7 @@ function createSongCard(song, list, idx) {
       ${dur ? `<span class="song-card__duration">${dur}</span>` : ''}
       <button class="song-card__like-btn ${liked ? 'liked' : ''}" aria-label="Like"><i class="${liked ? 'ph-fill' : 'ph'} ph-heart"></i></button>
       <button class="song-card__playlist-btn" aria-label="Add to Playlist"><i class="ph-bold ph-plus"></i></button>
+      <button class="song-card__share-btn" aria-label="Share Song"><i class="ph ph-share-network"></i></button>
       <button class="song-card__dl-btn" aria-label="Download"><i class="ph ph-download-simple"></i></button>
     </div>
     <div class="song-card__info">
@@ -246,6 +247,15 @@ function createSongCard(song, list, idx) {
   card.querySelector('.song-card__playlist-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     openPlaylistModal(song);
+  });
+
+  // Share
+  card.querySelector('.song-card__share-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const url = `${window.location.origin}${window.location.pathname}?songId=${song.id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      showToast('Link copied to clipboard!', 'ph ph-link');
+    });
   });
 
   // Download
@@ -383,8 +393,26 @@ function showPlaylists() {
     // Render Playlist Header
     const hdr = document.createElement('div');
     hdr.style.marginBottom = '20px';
-    hdr.innerHTML = `<h3 style="font-family: var(--font-display); font-size: 1.2rem; margin-bottom: 8px;">${decode(p.name)}</h3>`;
+    hdr.style.display = 'flex';
+    hdr.style.alignItems = 'center';
+    hdr.style.gap = '12px';
+    
+    hdr.innerHTML = `
+      <h3 style="font-family: var(--font-display); font-size: 1.2rem; margin: 0;">${decode(p.name)}</h3>
+      <button class="playlist-share-btn" data-id="${p.id}" title="Share Playlist" style="background:rgba(255,255,255,0.05); border:none; border-radius:4px; padding:6px; color:#fff; cursor:pointer;" aria-label="Share Playlist"><i class="ph ph-share-network"></i></button>
+    `;
     pContainer.appendChild(hdr);
+    
+    // Bind share event
+    const shareBtn = hdr.querySelector('.playlist-share-btn');
+    shareBtn.addEventListener('click', () => {
+      const ids = p.songs.map(s => s.id);
+      const b64 = btoa(JSON.stringify(ids));
+      const url = `${window.location.origin}${window.location.pathname}?pName=${encodeURIComponent(p.name)}&pData=${encodeURIComponent(b64)}`;
+      navigator.clipboard.writeText(url).then(() => {
+        showToast('Playlist link copied!', 'ph ph-link');
+      });
+    });
     
     // Render Playlist Songs Grid
     const grid = document.createElement('div');
@@ -573,8 +601,11 @@ function renderPlaylistsInModal() {
     
     // Add logic
     row.addEventListener('click', () => {
-      if (Storage.addToPlaylist(p.id, currentPlaylistSong)) {
+      const res = Storage.addToPlaylist(p.id, currentPlaylistSong);
+      if (res === 'added') {
         showToast(`Added to "${decode(p.name)}"`, 'ph ph-check-circle');
+      } else if (res === 'full') {
+        showToast('Playlist is full (Max 50)', 'ph ph-warning-limit');
       } else {
         showToast(`Already in "${decode(p.name)}"`, 'ph ph-info');
       }
@@ -628,6 +659,44 @@ function syncRepeatUI() {
     const i = b.querySelector('i');
     if (i) i.className = mode === 2 ? 'ph ph-repeat-once' : 'ph ph-repeat';
   });
+}
+
+/* ══════════════════════════════
+   GLOBAL BOOT (URL PARSING)
+   ══════════════════════════════ */
+export async function processShareLink() {
+  const params = new URLSearchParams(window.location.search);
+  const songId = params.get('songId');
+  const pName = params.get('pName');
+  const pData = params.get('pData');
+
+  if (songId) {
+    const s = await Api.getSongById(songId);
+    if (s) Player.playSong(s, [s], 0);
+    // Cleanup URL
+    window.history.replaceState(null, '', window.location.pathname);
+  } else if (pName && pData) {
+    try {
+      const ids = JSON.parse(atob(decodeURIComponent(pData)));
+      if (Array.isArray(ids) && ids.length) {
+        showToast('Fetching shared playlist...', 'ph ph-spinner spin-anim');
+        const songs = await Api.getSongsByIds(ids);
+        if (songs.length) {
+          Storage.importPlaylist(decodeURIComponent(pName), songs);
+          showToast(`Saved "${decode(pName)}" to Playlists!`, 'ph-fill ph-check-circle');
+          // Navigate to playlists tab optionally
+          setTimeout(showPlaylists, 1500);
+        } else {
+          showToast('Failed to load playlist songs.', 'ph ph-x-circle');
+        }
+      }
+    } catch (e) {
+      console.warn('Invalid playlist payload', e);
+      showToast('Corrupted playlist link.', 'ph ph-warning-circle');
+    }
+    // Cleanup URL
+    window.history.replaceState(null, '', window.location.pathname);
+  }
 }
 
 /* ══════════════════════════════
@@ -705,6 +774,16 @@ export function initUI() {
     if (!s) { showToast('No song selected', 'ph ph-warning-circle'); return; }
     downloadSong(s, playerDlBtn);
   });
+
+  // Player Share
+  const execShare = () => {
+    const s = Player.getCurrentSong();
+    if (!s) { showToast('No song selected', 'ph ph-warning-circle'); return; }
+    const url = `${window.location.origin}${window.location.pathname}?songId=${s.id}`;
+    navigator.clipboard.writeText(url).then(() => showToast('Link copied!', 'ph ph-link'));
+  };
+  $('#player-share-btn')?.addEventListener('click', execShare);
+  $('#np-share-btn')?.addEventListener('click', execShare);
 
   // Expand / Queue / Lyrics / Playlists
   $('#btn-expand')?.addEventListener('click', toggleNowPlaying);

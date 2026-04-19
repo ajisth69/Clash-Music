@@ -34,6 +34,9 @@ async function boot() {
     return;
   }
 
+  // Intercept shared URLs
+  await UI.processShareLink();
+
   // Load everything
   await Promise.all([
     loadCategories(),

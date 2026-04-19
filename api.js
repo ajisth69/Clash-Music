@@ -229,3 +229,17 @@ export async function getLyrics(songId) {
   // Handle varying JioSaavn proxy schema
   return data.data.lyrics || data.data.snippet || null;
 }
+
+/**
+ * Fetch multiple songs by ID array (chunked 10 at a time safely).
+ */
+export async function getSongsByIds(ids) {
+  if (!Array.isArray(ids) || !ids.length) return [];
+  const songs = [];
+  for (let i = 0; i < ids.length; i += 10) {
+    const chunk = ids.slice(i, i + 10);
+    const results = await Promise.all(chunk.map(id => getSongById(id)));
+    songs.push(...results.filter(Boolean));
+  }
+  return songs;
+}
