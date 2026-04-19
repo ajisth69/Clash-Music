@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Clash Musics — Premium music streaming experience." />
+  <title>Clash Musics — Stream Music Beautifully</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.0.3/src/regular/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.0.3/src/fill/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.0.3/src/bold/style.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Custom cursor -->
+  <div class="cursor-dot" id="cursor-dot"></div>
+  <div class="cursor-ring" id="cursor-ring"></div>
+
+  <!-- Background -->
+  <div class="bg-mesh" aria-hidden="true"></div>
+  <div class="bg-orbs" aria-hidden="true">
+    <div class="orb orb--1"></div><div class="orb orb--2"></div><div class="orb orb--3"></div>
+  </div>
+  <div class="bg-noise" aria-hidden="true"></div>
+  <div class="ambient-glow" id="ambient-glow" aria-hidden="true"></div>
+
+  <!-- ═══ Top Bar ═══ -->
+  <header class="topbar" id="topbar">
+    <div class="topbar__brand">
+      <div class="brand-logo"><i class="ph-bold ph-music-notes-plus"></i></div>
+      <span class="topbar__title">Clash Musics</span>
+    </div>
+    <div class="topbar__search" id="search-container">
+      <i class="ph ph-magnifying-glass"></i>
+      <input type="search" id="search-input" placeholder="What do you want to listen to?" autocomplete="off" aria-label="Search" />
+      <kbd class="search-kbd" aria-hidden="true">/</kbd>
+    </div>
+    <nav class="topbar__nav">
+      <button class="nav-btn" id="btn-home" aria-label="Home" title="Home"><i class="ph ph-house"></i></button>
+      <button class="nav-btn" id="btn-liked" aria-label="Liked" title="Liked Songs"><i class="ph ph-heart"></i></button>
+      <button class="nav-btn" id="btn-history" aria-label="History" title="History"><i class="ph ph-clock-counter-clockwise"></i></button>
+    </nav>
+  </header>
+
+  <!-- ═══ Main ═══ -->
+  <main class="main-content" id="main-content">
+    <!-- Home -->
+    <section class="view view--home" id="view-home">
+      <div class="hero reveal">
+        <h1 class="hero__greeting" id="hero-greeting">Good evening</h1>
+        <p class="hero__subtitle">What sounds good today?</p>
+      </div>
+
+      <div class="category-section category-section--featured reveal hidden" id="section-taste">
+        <div class="category-header">
+          <div class="category-label"><i class="ph-fill ph-sparkle"></i><h2>Made for You</h2></div>
+          <span class="category-tag" id="taste-tag"></span>
+        </div>
+        <div class="scroll-row" id="row-taste"><div class="skeleton-loader"></div></div>
+      </div>
+
+      <div class="category-section reveal" id="section-anime">
+        <div class="category-header"><div class="category-label"><i class="ph ph-shooting-star"></i><h2>Anime OSTs</h2></div></div>
+        <div class="scroll-row" id="row-anime"><div class="skeleton-loader"></div></div>
+      </div>
+      <div class="category-section reveal" id="section-bollywood">
+        <div class="category-header"><div class="category-label"><i class="ph ph-film-strip"></i><h2>Bollywood Hits</h2></div></div>
+        <div class="scroll-row" id="row-bollywood"><div class="skeleton-loader"></div></div>
+      </div>
+      <div class="category-section reveal" id="section-global">
+        <div class="category-header"><div class="category-label"><i class="ph ph-globe-hemisphere-west"></i><h2>Global Top Charts</h2></div></div>
+        <div class="scroll-row" id="row-global"><div class="skeleton-loader"></div></div>
+      </div>
+      <div class="category-section reveal" id="section-lofi">
+        <div class="category-header"><div class="category-label"><i class="ph ph-headphones"></i><h2>Lo-Fi & Chill</h2></div></div>
+        <div class="scroll-row" id="row-lofi"><div class="skeleton-loader"></div></div>
+      </div>
+      <div class="category-section reveal" id="section-punjabi">
+        <div class="category-header"><div class="category-label"><i class="ph ph-microphone-stage"></i><h2>Punjabi Bangers</h2></div></div>
+        <div class="scroll-row" id="row-punjabi"><div class="skeleton-loader"></div></div>
+      </div>
+      <div class="category-section reveal" id="section-golden">
+        <div class="category-header"><div class="category-label"><i class="ph ph-vinyl-record"></i><h2>Golden Era Classics</h2></div></div>
+        <div class="scroll-row" id="row-golden"><div class="skeleton-loader"></div></div>
+      </div>
+    </section>
+
+    <!-- Search -->
+    <section class="view view--search hidden" id="view-search">
+      <h2 class="view-title" id="search-results-title">Search Results</h2>
+      <div class="search-results-grid" id="search-results-grid"></div>
+    </section>
+
+    <!-- Liked -->
+    <section class="view view--liked hidden" id="view-liked">
+      <div class="view-header">
+        <h2 class="view-title"><i class="ph-fill ph-heart"></i> Liked Songs</h2>
+        <p class="view-subtitle">Your personal collection</p>
+      </div>
+      <div class="liked-songs-grid" id="liked-songs-grid"></div>
+      <div class="empty-state hidden" id="liked-empty"><i class="ph ph-heart-break"></i><p>No liked songs yet</p><span>Tap ♡ on any song to save it here</span></div>
+    </section>
+
+    <!-- History -->
+    <section class="view view--history hidden" id="view-history">
+      <div class="view-header">
+        <h2 class="view-title"><i class="ph ph-clock-counter-clockwise"></i> Recently Played</h2>
+        <p class="view-subtitle">Your last 10 tracks</p>
+      </div>
+      <div class="history-grid" id="history-grid"></div>
+      <div class="empty-state hidden" id="history-empty"><i class="ph ph-music-note"></i><p>Nothing here yet</p><span>Play something to start your history</span></div>
+    </section>
+  </main>
+
+  <!-- ═══ Now Playing Fullscreen Overlay ═══ -->
+  <div class="np-overlay hidden" id="np-overlay">
+    <button class="np-close" id="np-close" aria-label="Close"><i class="ph ph-caret-down"></i></button>
+    <div class="np-bg" id="np-bg"></div>
+    <div class="np-content">
+      <div class="np-art-wrap">
+        <img class="np-art" id="np-art" src="" alt="Album Art" />
+        <div class="np-vinyl"></div>
+      </div>
+      <div class="np-info">
+        <h2 class="np-title" id="np-title">—</h2>
+        <p class="np-artist" id="np-artist">—</p>
+      </div>
+      <div class="np-progress">
+        <input type="range" class="np-seek" id="np-seek" min="0" max="100" value="0" step="0.1" />
+        <div class="np-times">
+          <span id="np-time-current">0:00</span>
+          <span id="np-time-duration">0:00</span>
+        </div>
+      </div>
+      <div class="np-controls">
+        <button class="np-btn" id="np-shuffle" title="Shuffle"><i class="ph ph-shuffle"></i></button>
+        <button class="np-btn" id="np-prev"><i class="ph-fill ph-skip-back"></i></button>
+        <button class="np-btn np-btn--play" id="np-play"><i class="ph-fill ph-play" id="np-play-icon"></i></button>
+        <button class="np-btn" id="np-next"><i class="ph-fill ph-skip-forward"></i></button>
+        <button class="np-btn" id="np-repeat" title="Repeat"><i class="ph ph-repeat"></i></button>
+        <button class="np-btn" id="np-minimize" title="Minimize"><i class="ph ph-arrows-in-simple"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Queue Panel ═══ -->
+  <div class="queue-panel hidden" id="queue-panel">
+    <div class="queue-header">
+      <h3>Queue</h3>
+      <button class="queue-close" id="queue-close"><i class="ph ph-x"></i></button>
+    </div>
+    <div class="queue-list" id="queue-list"></div>
+  </div>
+
+  <!-- ═══ Player Bar ═══ -->
+  <footer class="player-bar" id="player-bar">
+    <div class="player-bar__progress-wrap" id="progress-wrap">
+      <div class="player-bar__progress" id="progress-bar"></div>
+      <div class="player-bar__buffered" id="buffered-bar"></div>
+      <input type="range" class="player-bar__seek" id="seek-slider" min="0" max="100" value="0" step="0.1" aria-label="Seek" />
+    </div>
+    <div class="player-bar__inner">
+      <div class="player-bar__info" id="player-info">
+        <div class="player-bar__art-wrap" id="player-art-wrap">
+          <img class="player-bar__art" id="player-art"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect width='56' height='56' fill='%23181822'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' fill='%23444' font-size='22'%3E♫%3C/text%3E%3C/svg%3E"
+            alt="Art" />
+          <div class="vinyl-ring" id="vinyl-ring"></div>
+        </div>
+        <div class="player-bar__text">
+          <span class="player-bar__song" id="player-song">Pick a song</span>
+          <span class="player-bar__artist" id="player-artist">—</span>
+        </div>
+        <button class="player-bar__action-btn" id="player-like-btn" title="Like"><i class="ph ph-heart" id="player-like-icon"></i></button>
+        <button class="player-bar__action-btn" id="player-dl-btn" title="Download"><i class="ph ph-download-simple" id="player-dl-icon"></i></button>
+      </div>
+      <div class="player-bar__controls">
+        <button class="ctrl-btn ctrl-btn--sm" id="btn-shuffle" title="Shuffle"><i class="ph ph-shuffle" id="shuffle-icon"></i></button>
+        <button class="ctrl-btn" id="btn-prev" title="Previous"><i class="ph-fill ph-skip-back"></i></button>
+        <button class="ctrl-btn ctrl-btn--play" id="btn-play" title="Play"><i class="ph-fill ph-play" id="play-icon"></i></button>
+        <button class="ctrl-btn" id="btn-next" title="Next"><i class="ph-fill ph-skip-forward"></i></button>
+        <button class="ctrl-btn ctrl-btn--sm" id="btn-repeat" title="Repeat"><i class="ph ph-repeat" id="repeat-icon"></i></button>
+      </div>
+      <div class="player-bar__right">
+        <button class="ctrl-btn ctrl-btn--sm" id="btn-queue" title="Queue"><i class="ph ph-queue"></i></button>
+        <button class="ctrl-btn ctrl-btn--sm" id="btn-expand" title="Now Playing"><i class="ph ph-arrows-out-simple"></i></button>
+        <span class="player-bar__time" id="player-time">0:00 / 0:00</span>
+        <div class="player-bar__volume">
+          <button class="ctrl-btn ctrl-btn--vol" id="btn-mute" title="Mute"><i class="ph-fill ph-speaker-high" id="volume-icon"></i></button>
+          <input type="range" class="volume-slider" id="volume-slider" min="0" max="1" step="0.01" value="0.7" aria-label="Volume" />
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Credit & Scroll-to-top -->
+  <div class="credit-badge">Made by <strong>Ajisth</strong></div>
+  <button class="scroll-top hidden" id="scroll-top" aria-label="Scroll to top"><i class="ph ph-caret-up"></i></button>
+
+  <div class="toast-container" id="toast-container"></div>
+  <script type="module" src="main.js"></script>
+</body>
+</html>
