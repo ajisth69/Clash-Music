@@ -252,7 +252,7 @@ function createSongCard(song, list, idx) {
   // Share
   card.querySelector('.song-card__share-btn').addEventListener('click', (e) => {
     e.stopPropagation();
-    const url = `${window.location.origin}${window.location.pathname}?songId=${song.id}`;
+    const url = `https://clashmusic.ajisth007.workers.dev/?songId=${song.id}`;
     navigator.clipboard.writeText(url).then(() => {
       showToast('Link copied to clipboard!', 'ph ph-link');
     });
@@ -408,7 +408,7 @@ function showPlaylists() {
     shareBtn.addEventListener('click', () => {
       const ids = p.songs.map(s => s.id);
       const b64 = btoa(JSON.stringify(ids));
-      const url = `${window.location.origin}${window.location.pathname}?pName=${encodeURIComponent(p.name)}&pData=${encodeURIComponent(b64)}`;
+      const url = `https://clashmusic.ajisth007.workers.dev/?pName=${encodeURIComponent(p.name)}&pData=${encodeURIComponent(b64)}`;
       navigator.clipboard.writeText(url).then(() => {
         showToast('Playlist link copied!', 'ph ph-link');
       });
@@ -779,7 +779,7 @@ export function initUI() {
   const execShare = () => {
     const s = Player.getCurrentSong();
     if (!s) { showToast('No song selected', 'ph ph-warning-circle'); return; }
-    const url = `${window.location.origin}${window.location.pathname}?songId=${s.id}`;
+    const url = `https://clashmusic.ajisth007.workers.dev/?songId=${s.id}`;
     navigator.clipboard.writeText(url).then(() => showToast('Link copied!', 'ph ph-link'));
   };
   $('#player-share-btn')?.addEventListener('click', execShare);
