@@ -846,3 +846,82 @@ body.cursor-hover .cursor-ring {
   .song-card { flex: 0 0 136px; }
   .search-results-grid, .liked-songs-grid, .history-grid { grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: 10px; }
 }
+
+/* ══════════════════════════════
+   PREMIUM FEATURES ADD-ONS
+   ══════════════════════════════ */
+
+/* Search Spinner */
+.search-spinner {
+  text-align: center; color: var(--text-secondary);
+  padding: 30px; font-size: 0.85rem; display: flex;
+  align-items: center; justify-content: center; gap: 8px;
+}
+.spin-anim { animation: spin 1s linear infinite; font-size: 1.2rem; }
+
+/* Add to Playlist Card Button */
+.song-card__playlist-btn {
+  position: absolute; right: 7px; top: 40px; /* Below the like button */
+  width: 28px; height: 28px; border-radius: 50%; border: none;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(6px);
+  color: rgba(255,255,255,0.6); font-size: 13px;
+  display: grid; place-items: center; cursor: pointer;
+  opacity: 0; transform: scale(0.7); z-index: 5;
+  transition: all 0.25s var(--ease);
+}
+.song-card__playlist-btn:hover { color: var(--accent); background: rgba(139,108,255,0.2); }
+.song-card:hover .song-card__playlist-btn { opacity: 1; transform: scale(1); }
+
+/* Playlists Modal Additions */
+.playlist-create {
+  display: flex; gap: 8px; margin-bottom: 16px;
+}
+#playlist-new-input {
+  flex: 1; padding: 8px 14px; border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm); background: rgba(255,255,255,0.035);
+  color: #fff; font-family: var(--font-body); outline: none;
+}
+#playlist-new-input:focus { border-color: rgba(139,108,255,0.4); }
+#playlist-new-btn {
+  width: 40px; border-radius: var(--radius-sm); border: none;
+  background: var(--accent); color: #fff; cursor: pointer;
+  transition: transform 0.2s;
+}
+#playlist-new-btn:hover { background: var(--accent-soft); transform: scale(1.05); }
+
+.playlist-list {
+  display: flex; flex-direction: column; gap: 4px;
+  max-height: 250px; overflow-y: auto;
+}
+.playlist-rowItem {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; background: rgba(255,255,255,0.02);
+  border-radius: var(--radius-sm); cursor: pointer;
+  transition: background 0.2s;
+}
+.playlist-rowItem:hover { background: rgba(255,255,255,0.05); }
+
+/* NP Lyrics Overlay */
+.np-lyrics-panel {
+  position: absolute; inset: 0; background: rgba(5,5,8,0.7);
+  backdrop-filter: blur(28px); z-index: 10;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 80px 20px 40px; transition: transform 0.4s var(--ease), opacity 0.4s;
+  overflow-y: auto; text-align: center;
+}
+.np-lyrics-panel.hidden { transform: translateY(100%); opacity: 0; pointer-events: none; }
+
+.np-lyrics-close {
+  position: absolute; top: 30px; right: 30px; width: 44px; height: 44px;
+  border-radius: 50%; background: rgba(255,255,255,0.1); border: none;
+  color: #fff; font-size: 20px; display: grid; place-items: center;
+  cursor: pointer; transition: background 0.2s;
+}
+.np-lyrics-close:hover { background: rgba(255,255,255,0.2); }
+
+.np-lyrics-content {
+  font-size: 1.25rem; line-height: 2; font-weight: 500;
+  color: var(--text-primary); max-width: 600px;
+  white-space: pre-wrap; font-family: var(--font-body);
+}
+

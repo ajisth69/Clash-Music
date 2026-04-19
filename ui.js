@@ -18,15 +18,17 @@
 
 import * as Player  from './player.js';
 import * as Storage from './storage.js';
+import * as Api     from './api.js';
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
 
 /* ── DOM Refs ── */
-const viewHome    = $('#view-home');
-const viewSearch  = $('#view-search');
-const viewLiked   = $('#view-liked');
-const viewHistory = $('#view-history');
+const viewHome      = $('#view-home');
+const viewSearch    = $('#view-search');
+const viewLiked     = $('#view-liked');
+const viewPlaylists = $('#view-playlists');
+const viewHistory   = $('#view-history');
 
 const searchInput        = $('#search-input');
 const searchResultsTitle = $('#search-results-title');
@@ -44,11 +46,19 @@ const playerLikeBtn  = $('#player-like-btn');
 const playerLikeIcon = $('#player-like-icon');
 const playerDlBtn    = $('#player-dl-btn');
 
-const btnHome     = $('#btn-home');
-const btnLiked    = $('#btn-liked');
-const btnHistory  = $('#btn-history');
-const toastBox    = $('#toast-container');
-const ambientGlow = $('#ambient-glow');
+const btnHome       = $('#btn-home');
+const btnLiked      = $('#btn-liked');
+const btnPlaylists  = $('#btn-playlists');
+const btnHistory    = $('#btn-history');
+const toastBox      = $('#toast-container');
+const ambientGlow   = $('#ambient-glow');
+
+/* ── State ── */
+let currentSearchQuery = '';
+let currentSearchPage  = 1;
+let isFetchingMore     = false;
+let currentPlaylistSong = null; // For modal
+
 
 /* ══════════════════════════════
    HELPERS
@@ -206,6 +216,7 @@ function createSongCard(song, list, idx) {
       </div>
       ${dur ? `<span class="song-card__duration">${dur}</span>` : ''}
       <button class="song-card__like-btn ${liked ? 'liked' : ''}" aria-label="Like"><i class="${liked ? 'ph-fill' : 'ph'} ph-heart"></i></button>
+      <button class="song-card__playlist-btn" aria-label="Add to Playlist"><i class="ph-bold ph-plus"></i></button>
       <button class="song-card__dl-btn" aria-label="Download"><i class="ph ph-download-simple"></i></button>
     </div>
     <div class="song-card__info">
@@ -218,7 +229,7 @@ function createSongCard(song, list, idx) {
   const play = () => Player.playSong(song, list, idx);
   card.querySelector('.song-card__play-btn').addEventListener('click', (e) => { addRipple(e.currentTarget, e); play(); });
   card.addEventListener('click', (e) => {
-    if (e.target.closest('.song-card__like-btn') || e.target.closest('.song-card__dl-btn')) return;
+    if (e.target.closest('button')) return;
     play();
   });
 
@@ -229,6 +240,12 @@ function createSongCard(song, list, idx) {
     syncCardLike(card, l);
     syncPlayerLike();
     showToast(l ? `Liked "${decode(song.title)}"` : 'Removed', l ? 'ph-fill ph-heart' : 'ph ph-heart-break');
+  });
+
+  // Playlist Add
+  card.querySelector('.song-card__playlist-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    openPlaylistModal(song);
   });
 
   // Download
@@ -266,8 +283,8 @@ export function renderSongRow(container, songs) {
    VIEW MANAGEMENT
    ══════════════════════════════ */
 function hideAll() {
-  [viewHome, viewSearch, viewLiked, viewHistory].forEach(v => v?.classList.add('hidden'));
-  [btnHome, btnLiked, btnHistory].forEach(b => b?.classList.remove('active'));
+  [viewHome, viewSearch, viewLiked, viewPlaylists, viewHistory].forEach(v => v?.classList.add('hidden'));
+  [btnHome, btnLiked, btnPlaylists, btnHistory].forEach(b => b?.classList.remove('active'));
 }
 
 export function showHome() {
@@ -278,16 +295,49 @@ export function showHome() {
   initReveal();
 }
 
-export function showSearchResults(results, query) {
+let searchObserver = null;
+
+export function showSearchResults(results, query, isAppend = false) {
   hideAll();
   viewSearch.classList.remove('hidden');
   searchResultsTitle.textContent = `Results for "${query}"`;
-  searchResultsGrid.innerHTML = '';
+  
+  if (!isAppend) {
+    searchResultsGrid.innerHTML = '';
+    currentSearchQuery = query;
+    currentSearchPage = 1;
+    isFetchingMore = false;
+  }
+  
   if (!results?.length) {
-    searchResultsGrid.innerHTML = '<p style="color:var(--text-muted);padding:20px;">No results.</p>';
+    if (!isAppend) searchResultsGrid.innerHTML = '<p style="color:var(--text-muted);padding:20px;">No results.</p>';
+    $('#search-loading-spinner')?.classList.add('hidden');
     return;
   }
+  
   results.forEach((s, i) => searchResultsGrid.appendChild(createSongCard(s, results, i)));
+  
+  // Show spinner and mount observer
+  const spinner = $('#search-loading-spinner');
+  if (spinner) {
+    spinner.classList.remove('hidden');
+    if (!searchObserver) {
+      searchObserver = new IntersectionObserver(async (entries) => {
+        if (entries[0].isIntersecting && !isFetchingMore && currentSearchQuery) {
+          isFetchingMore = true;
+          currentSearchPage++;
+          const nextResults = await Api.searchSongs(currentSearchQuery, 20, currentSearchPage);
+          if (nextResults?.length) {
+            showSearchResults(nextResults, currentSearchQuery, true);
+          } else {
+            spinner.classList.add('hidden'); // no more results
+          }
+          isFetchingMore = false;
+        }
+      }, { rootMargin: '100px' });
+      searchObserver.observe(spinner);
+    }
+  }
 }
 
 function showLiked() {
@@ -310,6 +360,44 @@ function showHistory() {
   if (!hist.length) { historyEmpty.classList.remove('hidden'); return; }
   historyEmpty.classList.add('hidden');
   hist.forEach((s, i) => historyGrid.appendChild(createSongCard(s, hist, i)));
+}
+
+function showPlaylists() {
+  hideAll();
+  viewPlaylists.classList.remove('hidden');
+  btnPlaylists.classList.add('active');
+  
+  const pContainer = $('#playlists-container');
+  const emptyState = $('#playlists-empty');
+  const pList = Storage.getPlaylists();
+  
+  pContainer.innerHTML = '';
+  
+  if (!pList.length) {
+    emptyState.classList.remove('hidden');
+    return;
+  }
+  emptyState.classList.add('hidden');
+  
+  pList.forEach(p => {
+    // Render Playlist Header
+    const hdr = document.createElement('div');
+    hdr.style.marginBottom = '20px';
+    hdr.innerHTML = `<h3 style="font-family: var(--font-display); font-size: 1.2rem; margin-bottom: 8px;">${decode(p.name)}</h3>`;
+    pContainer.appendChild(hdr);
+    
+    // Render Playlist Songs Grid
+    const grid = document.createElement('div');
+    grid.className = 'search-results-grid'; // Reusing grid class
+    grid.style.padding = '0 0 16px 0';
+    
+    if (!p.songs.length) {
+      grid.innerHTML = '<p style="color:var(--text-muted); font-size: 0.85rem;">Empty playlist</p>';
+    } else {
+      p.songs.forEach((s, i) => grid.appendChild(createSongCard(s, p.songs, i)));
+    }
+    pContainer.appendChild(grid);
+  });
 }
 
 /* ══════════════════════════════
@@ -451,6 +539,74 @@ function toggleNowPlaying() {
 }
 
 /* ══════════════════════════════
+   PLAYLIST MODAL & LYRICS
+   ══════════════════════════════ */
+function openPlaylistModal(song) {
+  currentPlaylistSong = song;
+  const modal = $('#playlist-modal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  renderPlaylistsInModal();
+}
+
+function closePlaylistModal() {
+  const modal = $('#playlist-modal');
+  if (modal) modal.classList.add('hidden');
+  currentPlaylistSong = null;
+}
+
+function renderPlaylistsInModal() {
+  const listParams = $('#playlist-list');
+  if (!listParams) return;
+  listParams.innerHTML = '';
+  const pList = Storage.getPlaylists();
+  
+  if (!pList.length) {
+    listParams.innerHTML = '<p style="font-size:0.8rem; color:var(--text-muted); padding: 10px;">No playlists yet. Create one above!</p>';
+    return;
+  }
+  
+  pList.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'playlist-rowItem';
+    row.innerHTML = `<span>${decode(p.name)}</span> <span style="font-size:0.7rem; color:var(--text-muted);">${p.songs.length} ♫</span>`;
+    
+    // Add logic
+    row.addEventListener('click', () => {
+      if (Storage.addToPlaylist(p.id, currentPlaylistSong)) {
+        showToast(`Added to "${decode(p.name)}"`, 'ph ph-check-circle');
+      } else {
+        showToast(`Already in "${decode(p.name)}"`, 'ph ph-info');
+      }
+      closePlaylistModal();
+    });
+    listParams.appendChild(row);
+  });
+}
+
+function toggleLyricsPanel() {
+  const pnl = $('#np-lyrics-panel');
+  if (!pnl) return;
+  
+  const isHidden = pnl.classList.contains('hidden');
+  if (isHidden) {
+    const song = Player.getCurrentSong();
+    if (!song) return;
+    
+    const ctn = $('#np-lyrics-content');
+    ctn.textContent = 'Loading lyrics...';
+    pnl.classList.remove('hidden');
+    
+    Api.getLyrics(song.id).then(lyrics => {
+      if (!lyrics) ctn.textContent = "Lyrics not available for this track.";
+      else ctn.textContent = lyrics.replace(/<br\s*\/?>/gi, '\n');
+    }).catch(() => { ctn.textContent = "Error fetching lyrics."; });
+  } else {
+    pnl.classList.add('hidden');
+  }
+}
+
+/* ══════════════════════════════
    SHUFFLE / REPEAT UI
    ══════════════════════════════ */
 function syncShuffleUI() {
@@ -550,10 +706,27 @@ export function initUI() {
     downloadSong(s, playerDlBtn);
   });
 
-  // Expand / Queue
+  // Expand / Queue / Lyrics / Playlists
   $('#btn-expand')?.addEventListener('click', toggleNowPlaying);
+  $('#np-lyrics-btn')?.addEventListener('click', toggleLyricsPanel);
+  $('#np-lyrics-close')?.addEventListener('click', toggleLyricsPanel);
   $('#btn-queue')?.addEventListener('click', toggleQueue);
   $('#queue-close')?.addEventListener('click', () => $('#queue-panel')?.classList.add('hidden'));
+
+  $('#playlist-close')?.addEventListener('click', closePlaylistModal);
+  $('#playlist-modal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'playlist-modal') closePlaylistModal();
+  });
+  
+  // Create New Playlist handler
+  $('#playlist-new-btn')?.addEventListener('click', () => {
+    const ipt = $('#playlist-new-input');
+    if (ipt && ipt.value.trim()) {
+      Storage.createPlaylist(ipt.value);
+      ipt.value = '';
+      renderPlaylistsInModal();
+    }
+  });
 
   // Album art click → fullscreen player
   artWrap?.addEventListener('click', () => {
@@ -563,21 +736,26 @@ export function initUI() {
   // Navigation
   btnHome.addEventListener('click', showHome);
   btnLiked.addEventListener('click', showLiked);
+  btnPlaylists.addEventListener('click', showPlaylists);
   btnHistory.addEventListener('click', showHistory);
 
   // ── Keyboard Shortcuts ──
   document.addEventListener('keydown', (e) => {
-    const inInput = document.activeElement === searchInput;
+    const isTyping = document.activeElement && 
+      (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA');
 
-    if (e.key === '/' && !inInput) { e.preventDefault(); searchInput.focus(); return; }
+    if (e.key === '/' && !isTyping) { e.preventDefault(); searchInput.focus(); return; }
     if (e.key === 'Escape') {
       if (npOpen) { closeNowPlaying(); return; }
       const queue = $('#queue-panel');
       if (queue && !queue.classList.contains('hidden')) { queue.classList.add('hidden'); return; }
-      if (inInput) { searchInput.value = ''; searchInput.blur(); showHome(); return; }
+      const playlistModal = $('#playlist-modal');
+      if (playlistModal && !playlistModal.classList.contains('hidden')) { closePlaylistModal(); return; }
+      if (isTyping && document.activeElement === searchInput) { searchInput.value = ''; searchInput.blur(); showHome(); return; }
+      if (isTyping) { document.activeElement.blur(); return; }
     }
 
-    if (inInput) return;
+    if (isTyping) return; // Completely ignore all hotkeys if the user is typing in an input field
 
     switch (e.code) {
       case 'Space':      e.preventDefault(); Player.toggle(); break;

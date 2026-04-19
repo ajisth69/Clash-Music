@@ -195,9 +195,9 @@ export function getActiveEndpoint() {
 /**
  * Search songs by query string.
  */
-export async function searchSongs(query, limit = 20) {
+export async function searchSongs(query, limit = 20, page = 1) {
   if (!query?.trim()) return [];
-  const data = await apiFetch(`/search/songs?query=${encodeURIComponent(query)}&limit=${limit}`);
+  const data = await apiFetch(`/search/songs?query=${encodeURIComponent(query)}&limit=${limit}&page=${page}`);
   if (!data?.data?.results) return [];
   return data.data.results.map(normaliseSong).filter(Boolean);
 }
@@ -217,4 +217,15 @@ export async function getSongById(id) {
   const data = await apiFetch(`/songs/${id}`);
   if (!data?.data?.length) return null;
   return normaliseSong(data.data[0]);
+}
+
+/**
+ * Fetch lyrics by song ID.
+ */
+export async function getLyrics(songId) {
+  if (!songId) return null;
+  const data = await apiFetch(`/songs/${songId}/lyrics`);
+  if (!data?.data) return null;
+  // Handle varying JioSaavn proxy schema
+  return data.data.lyrics || data.data.snippet || null;
 }

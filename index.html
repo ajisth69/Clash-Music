@@ -40,6 +40,7 @@
     <nav class="topbar__nav">
       <button class="nav-btn" id="btn-home" aria-label="Home" title="Home"><i class="ph ph-house"></i></button>
       <button class="nav-btn" id="btn-liked" aria-label="Liked" title="Liked Songs"><i class="ph ph-heart"></i></button>
+      <button class="nav-btn" id="btn-playlists" aria-label="Playlists" title="My Playlists"><i class="ph ph-playlist"></i></button>
       <button class="nav-btn" id="btn-history" aria-label="History" title="History"><i class="ph ph-clock-counter-clockwise"></i></button>
     </nav>
   </header>
@@ -91,6 +92,9 @@
     <section class="view view--search hidden" id="view-search">
       <h2 class="view-title" id="search-results-title">Search Results</h2>
       <div class="search-results-grid" id="search-results-grid"></div>
+      <div class="search-spinner hidden" id="search-loading-spinner">
+        <i class="ph ph-spinner spin-anim"></i> Loading more...
+      </div>
     </section>
 
     <!-- Liked -->
@@ -101,6 +105,16 @@
       </div>
       <div class="liked-songs-grid" id="liked-songs-grid"></div>
       <div class="empty-state hidden" id="liked-empty"><i class="ph ph-heart-break"></i><p>No liked songs yet</p><span>Tap ♡ on any song to save it here</span></div>
+    </section>
+
+    <!-- Playlists -->
+    <section class="view view--playlists hidden" id="view-playlists">
+      <div class="view-header">
+        <h2 class="view-title"><i class="ph ph-playlist"></i> My Playlists</h2>
+        <p class="view-subtitle">Your curated collections</p>
+      </div>
+      <div class="playlists-container" id="playlists-container" style="padding: 16px 28px;"></div>
+      <div class="empty-state hidden" id="playlists-empty"><i class="ph ph-list-plus"></i><p>No playlists created</p><span>Tap + on any song to create a playlist</span></div>
     </section>
 
     <!-- History -->
@@ -140,8 +154,15 @@
         <button class="np-btn np-btn--play" id="np-play"><i class="ph-fill ph-play" id="np-play-icon"></i></button>
         <button class="np-btn" id="np-next"><i class="ph-fill ph-skip-forward"></i></button>
         <button class="np-btn" id="np-repeat" title="Repeat"><i class="ph ph-repeat"></i></button>
+        <button class="np-btn" id="np-lyrics-btn" title="Lyrics"><i class="ph ph-text-align-center"></i></button>
         <button class="np-btn" id="np-minimize" title="Minimize"><i class="ph ph-arrows-in-simple"></i></button>
       </div>
+    </div>
+    
+    <!-- Lyrics Panel inside NP Layer -->
+    <div class="np-lyrics-panel hidden" id="np-lyrics-panel">
+      <button class="np-lyrics-close" id="np-lyrics-close"><i class="ph ph-x"></i></button>
+      <div class="np-lyrics-content" id="np-lyrics-content"></div>
     </div>
   </div>
 
@@ -152,6 +173,25 @@
       <button class="queue-close" id="queue-close"><i class="ph ph-x"></i></button>
     </div>
     <div class="queue-list" id="queue-list"></div>
+  </div>
+
+  <!-- ═══ Playlists Modal ═══ -->
+  <div class="modal-overlay hidden" id="playlist-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3><i class="ph ph-playlist"></i> Add to Playlist</h3>
+        <button class="modal-close" id="playlist-close"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="playlist-create">
+          <input type="text" id="playlist-new-input" placeholder="New playlist name..." autocomplete="off" />
+          <button id="playlist-new-btn"><i class="ph-bold ph-plus"></i></button>
+        </div>
+        <div class="playlist-list" id="playlist-list">
+          <!-- Playlists injected here -->
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ═══ Player Bar ═══ -->

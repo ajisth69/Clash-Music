@@ -5,10 +5,11 @@
  */
 
 const KEYS = {
-  VOLUME:  'clash_volume',
-  LAST:    'clash_lastPlayed',
-  HISTORY: 'clash_history',
-  LIKED:   'clash_liked',
+  VOLUME:    'clash_volume',
+  LAST:      'clash_lastPlayed',
+  HISTORY:   'clash_history',
+  LIKED:     'clash_liked',
+  PLAYLISTS: 'clash_playlists',
 };
 
 function readJSON(key, fallback) {
@@ -197,4 +198,39 @@ export function getTasteSummary() {
     topArtists,
     topMood: moods[0] || null,
   };
+}
+
+/* ══════════════════════════════════════════
+   CUSTOM PLAYLISTS 
+   ══════════════════════════════════════════ */
+
+export function getPlaylists() {
+  return readJSON(KEYS.PLAYLISTS, []);
+}
+
+export function createPlaylist(name) {
+  if (!name || !name.trim()) return null;
+  const pList = getPlaylists();
+  const newPlaylist = {
+    id: 'pl_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+    name: name.trim(),
+    songs: []
+  };
+  pList.push(newPlaylist);
+  writeJSON(KEYS.PLAYLISTS, pList);
+  return newPlaylist;
+}
+
+export function addToPlaylist(playlistId, song) {
+  if (!playlistId || !song?.id) return false;
+  const pList = getPlaylists();
+  const playlist = pList.find(p => p.id === playlistId);
+  if (!playlist) return false;
+  
+  // Prevent strict duplicates in the same playlist
+  if (playlist.songs.some(s => s.id === song.id)) return false;
+  
+  playlist.songs.push(song);
+  writeJSON(KEYS.PLAYLISTS, pList);
+  return true;
 }

@@ -21,6 +21,13 @@ function emit(name, detail = {}) {
   document.dispatchEvent(new CustomEvent(`player:${name}`, { detail }));
 }
 
+function decode(str) {
+  if (!str) return '';
+  const d = document.createElement('textarea');
+  d.innerHTML = str;
+  return d.value;
+}
+
 /* ── Public ── */
 
 export function playSong(song, list = [], idx = 0) {
@@ -42,6 +49,17 @@ export function playSong(song, list = [], idx = 0) {
   Storage.addToHistory(song);
   emit('trackchange', { song });
   emit('play');
+
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: decode(song.title),
+      artist: decode(song.artist),
+      album: decode(song.album || 'Clash Musics'),
+      artwork: [
+        { src: song.image, sizes: '500x500', type: 'image/jpeg' }
+      ]
+    });
+  }
 }
 
 export function toggle() {
@@ -147,3 +165,10 @@ audio.addEventListener('progress', () => {
 audio.addEventListener('waiting', () => emit('buffering'));
 audio.addEventListener('canplay', () => emit('canplay'));
 audio.addEventListener('error', () => emit('error', { message: 'Audio error.' }));
+
+if ('mediaSession' in navigator) {
+  navigator.mediaSession.setActionHandler('play', () => { if (audio.paused) { audio.play().catch(()=>{}); emit('play'); } });
+  navigator.mediaSession.setActionHandler('pause', () => { audio.pause(); emit('pause'); });
+  navigator.mediaSession.setActionHandler('previoustrack', prev);
+  navigator.mediaSession.setActionHandler('nexttrack', next);
+}
