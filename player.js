@@ -40,15 +40,22 @@ export function playSong(song, list = [], idx = 0) {
   currentSong = song;
 
   audio.src = song.streamUrl;
-  audio.play().catch(err => {
-    console.error('[Player]', err);
-    emit('error', { message: 'Playback failed.' });
-  });
 
   Storage.saveLastPlayed(song);
   Storage.addToHistory(song);
   emit('trackchange', { song });
-  emit('play');
+
+  audio.play().then(() => {
+    emit('play');
+  }).catch(err => {
+    console.error('[Player] Audio play blocked:', err);
+    emit('pause'); // Rollback the UI state!
+    if (err.name === 'NotAllowedError') {
+      emit('error', { message: 'Autoplay blocked. Tap Play to start! 🎵' });
+    } else {
+      emit('error', { message: 'Playback failed.' });
+    }
+  });
 
   if ('mediaSession' in navigator) {
     navigator.mediaSession.metadata = new MediaMetadata({
@@ -64,8 +71,12 @@ export function playSong(song, list = [], idx = 0) {
 
 export function toggle() {
   if (!currentSong) return;
-  if (audio.paused) { audio.play().catch(() => {}); emit('play'); }
-  else { audio.pause(); emit('pause'); }
+  if (audio.paused) { 
+    audio.play().then(() => emit('play')).catch(() => emit('pause')); 
+  } else { 
+    audio.pause(); 
+    emit('pause'); 
+  }
 }
 
 export function pause() { audio.pause(); emit('pause'); }
@@ -172,3 +183,4 @@ if ('mediaSession' in navigator) {
   navigator.mediaSession.setActionHandler('previoustrack', prev);
   navigator.mediaSession.setActionHandler('nexttrack', next);
 }
+
