@@ -672,7 +672,16 @@ export async function processShareLink() {
 
   if (songId) {
     const s = await Api.getSongById(songId);
-    if (s) Player.playSong(s, [s], 0);
+    if (s) {
+      Player.playSong(s, [s], 0);
+      // Modern browsers block autoplay on new tabs. Show a friendly toast if it was blocked!
+      setTimeout(() => {
+        const playIcon = document.getElementById('play-icon');
+        if (playIcon && playIcon.classList.contains('ph-play')) {
+          showToast('Tap play to start the shared song! 🎵', 'ph-fill ph-play-circle');
+        }
+      }, 500);
+    }
     // Cleanup URL
     window.history.replaceState(null, '', window.location.pathname);
   } else if (pName && pData) {
