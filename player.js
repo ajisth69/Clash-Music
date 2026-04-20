@@ -42,6 +42,7 @@ export function playSong(song, list = [], idx = 0) {
   audio.src = song.streamUrl;
 
   Storage.saveLastPlayed(song);
+  Storage.saveQueue(playlist, currentIdx);
   Storage.addToHistory(song);
   emit('trackchange', { song });
 
@@ -146,10 +147,13 @@ export function restoreState() {
   const vol = Storage.getVolume();
   audio.volume = vol;
   const last = Storage.getLastPlayed();
+  const savedQueue = Storage.getQueue();
+  const savedIdx = Storage.getQueueIdx();
+
   if (last) { 
     currentSong = last; 
-    playlist = [last];
-    currentIdx = 0;
+    playlist = savedQueue.length ? savedQueue : [last];
+    currentIdx = savedQueue.length ? savedIdx : 0;
     audio.src = last.streamUrl; // Crucial for play() to work on toggle!
     emit('trackchange', { song: last }); 
   }

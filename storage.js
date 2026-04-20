@@ -10,6 +10,8 @@ const KEYS = {
   HISTORY:   'clash_history',
   LIKED:     'clash_liked',
   PLAYLISTS: 'clash_playlists',
+  QUEUE:     'clash_queue',
+  QUEUE_IDX: 'clash_queue_idx',
 };
 
 function readJSON(key, fallback) {
@@ -31,6 +33,11 @@ export function saveVolume(vol) { localStorage.setItem(KEYS.VOLUME, String(vol))
 /* ── Last Played ── */
 export function getLastPlayed() { return readJSON(KEYS.LAST, null); }
 export function saveLastPlayed(song) { if (song) writeJSON(KEYS.LAST, song); }
+
+/* ── Queue ── */
+export function getQueue() { return readJSON(KEYS.QUEUE, []); }
+export function getQueueIdx() { return parseInt(localStorage.getItem(KEYS.QUEUE_IDX)) || 0; }
+export function saveQueue(q, idx) { writeJSON(KEYS.QUEUE, q); localStorage.setItem(KEYS.QUEUE_IDX, String(idx)); }
 
 /* ── History ── */
 export function getHistory() { return readJSON(KEYS.HISTORY, []); }

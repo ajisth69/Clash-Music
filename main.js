@@ -158,7 +158,25 @@ function wireSearch() {
   });
 
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { input.value = ''; input.blur(); UI.showHome(); }
+    if (e.key === 'Escape') { 
+      input.value = ''; 
+      input.blur(); 
+      UI.showHome(); 
+      return; 
+    }
+    
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      clearTimeout(searchTimer);
+      const q = input.value.trim();
+      if (!q) return;
+      
+      input.blur(); // close mobile keyboard
+      UI.showToast(`Searching for "${q}"...`, 'ph ph-spinner spin-anim');
+      API.searchAll(q, 15)
+        .then(results => UI.showSearchResults(results, q))
+        .catch(() => UI.showToast('Search failed', 'ph ph-warning-circle'));
+    }
   });
 }
 
