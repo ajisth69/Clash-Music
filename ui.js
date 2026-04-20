@@ -29,6 +29,7 @@ const viewSearch    = $('#view-search');
 const viewLiked     = $('#view-liked');
 const viewPlaylists = $('#view-playlists');
 const viewHistory   = $('#view-history');
+const viewDetail    = $('#view-detail');
 
 const searchInput        = $('#search-input');
 const searchResultsTitle = $('#search-results-title');
@@ -310,8 +311,8 @@ function createSongCard(song, list, idx) {
       <button class="song-card__dl-btn" aria-label="Download"><i class="ph ph-download-simple"></i></button>
     </div>
     <div class="song-card__info">
-      <div class="song-card__title" title="${decode(song.title)}">${decode(song.title)}</div>
-      <div class="song-card__artist" title="${decode(song.artist)}">${decode(song.artist)}</div>
+      <div class="song-card__title${song.albumId ? ' clickable' : ''}" title="${decode(song.title)}">${decode(song.title)}</div>
+      <div class="song-card__artist${song.artistId ? ' clickable' : ''}" title="${decode(song.artist)}">${decode(song.artist)}</div>
     </div>
   `;
 
@@ -322,6 +323,23 @@ function createSongCard(song, list, idx) {
     if (e.target.closest('button')) return;
     play();
   });
+  
+  // Navigate to Album / Artist
+  const titleEl = card.querySelector('.song-card__title');
+  if (song.albumId) {
+    titleEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openAlbum(song.albumId);
+    });
+  }
+  
+  const artistEl = card.querySelector('.song-card__artist');
+  if (song.artistId) {
+    artistEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openArtist(song.artistId);
+    });
+  }
 
   // Like
   card.querySelector('.song-card__like-btn').addEventListener('click', (e) => {
@@ -382,7 +400,7 @@ export function renderSongRow(container, songs) {
    VIEW MANAGEMENT
    ══════════════════════════════ */
 function hideAll() {
-  [viewHome, viewSearch, viewLiked, viewPlaylists, viewHistory].forEach(v => v?.classList.add('hidden'));
+  [viewHome, viewSearch, viewLiked, viewPlaylists, viewHistory, viewDetail].forEach(v => v?.classList.add('hidden'));
   [btnHome, btnLiked, btnPlaylists, btnHistory].forEach(b => b?.classList.remove('active'));
 }
 
@@ -735,9 +753,13 @@ function toggleLyricsPanel() {
     ctn.textContent = 'Loading lyrics...';
     pnl.classList.remove('hidden');
     
-    Api.getLyrics(song.id).then(lyrics => {
+    Api.getLyrics(song.id, decode(song.title), decode(song.artist), decode(song.album), song.duration).then(lyrics => {
       if (!lyrics) ctn.textContent = "Lyrics not available for this track.";
-      else ctn.textContent = lyrics.replace(/<br\s*\/?>/gi, '\n');
+      else {
+        // Remove [00:15.22] style LRC timestamps for clear reading
+        const plainLyrics = lyrics.replace(/\[\d{2}:\d{2}\.\d{2,3}\]/g, '').trim();
+        ctn.textContent = plainLyrics.replace(/<br\s*\/?>/gi, '\n');
+      }
     }).catch(() => { ctn.textContent = "Error fetching lyrics."; });
   } else {
     pnl.classList.add('hidden');
@@ -813,6 +835,64 @@ export async function processShareLink() {
     // Cleanup URL
     window.history.replaceState(null, '', window.location.pathname);
   }
+}
+
+/* ══════════════════════════════
+   DETAIL VIEWS (ARTIST & ALBUM)
+   ══════════════════════════════ */
+let activeDetailSongs = [];
+
+// Back button handler
+$('#detail-back-btn')?.addEventListener('click', () => {
+  // If we had a search ongoing, maybe go back to search? Or just home.
+  // Simplest is to go Home unless we want to track navigation history.
+  showHome();
+});
+
+$('#detail-play-all')?.addEventListener('click', () => {
+  if (activeDetailSongs.length) {
+    Player.playSong(activeDetailSongs[0], activeDetailSongs, 0);
+  }
+});
+
+function showDetailView(data, type) {
+  hideAll();
+  if (!viewDetail) return;
+  viewDetail.classList.remove('hidden');
+  
+  $('#detail-type').textContent = type;
+  $('#detail-title').textContent = decode(data.name);
+  $('#detail-subtitle').textContent = type === 'Artist' ? 'Top Songs' : `${data.songs.length} Tracks`;
+  $('#detail-art').src = data.image || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect width='56' height='56' fill='%23181822'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' fill='%23444' font-size='22'%3E♫%3C/text%3E%3C/svg%3E";
+  
+  $('#detail-loading')?.classList.add('hidden');
+  
+  activeDetailSongs = data.songs || [];
+  
+  const grid = $('#detail-grid');
+  grid.innerHTML = '';
+  if (!activeDetailSongs.length) {
+    grid.innerHTML = '<p style="color:var(--text-muted);padding:20px;">No tracks found.</p>';
+  } else {
+    activeDetailSongs.forEach((s, i) => grid.appendChild(createSongCard(s, activeDetailSongs, i)));
+    highlightPlaying();
+  }
+  
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+export async function openAlbum(id) {
+  showToast('Loading album...', 'ph ph-spinner spin-anim');
+  const data = await Api.getAlbumById(id);
+  if (data) showDetailView(data, 'Album');
+  else showToast('Failed to load album.', 'ph ph-warning-circle');
+}
+
+export async function openArtist(id) {
+  showToast('Loading artist...', 'ph ph-spinner spin-anim');
+  const data = await Api.getArtistById(id);
+  if (data) showDetailView(data, 'Artist');
+  else showToast('Failed to load artist.', 'ph ph-warning-circle');
 }
 
 /* ══════════════════════════════

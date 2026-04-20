@@ -164,11 +164,23 @@ function normaliseSong(raw) {
 
   let language = raw.language || '';
 
+  let artistId = '';
+  if (raw.artists?.primary?.length) {
+    artistId = raw.artists.primary[0].id || '';
+  }
+  
+  let albumId = '';
+  if (raw.album && raw.album.id) {
+    albumId = raw.album.id || '';
+  }
+
   return {
     id:        raw.id   || '',
     title:     raw.name || raw.title || 'Unknown',
     artist:    artist   || 'Unknown Artist',
+    artistId:  artistId,
     album:     raw.album?.name || raw.album || '',
+    albumId:   albumId,
     image:     image,
     streamUrl: streamUrl,
     duration:  raw.duration || 0,
@@ -220,9 +232,27 @@ export async function getSongById(id) {
 }
 
 /**
- * Fetch lyrics by song ID.
+ * Fetch lyrics by song ID or metadata using LRCLIB as primary source.
  */
-export async function getLyrics(songId) {
+export async function getLyrics(songId, trackName = '', artistName = '', albumName = '', duration = 0) {
+  if (trackName && artistName) {
+    try {
+      // LRCLIB /get enforces strict duration matching, meaning Mashups/Slowed edits
+      // won't accidentally fetch the original song's lyrics.
+      let url = `https://lrclib.net/api/get?track_name=${encodeURIComponent(trackName)}&artist_name=${encodeURIComponent(artistName)}`;
+      if (albumName) url += `&album_name=${encodeURIComponent(albumName)}`;
+      if (duration) url += `&duration=${Math.round(duration)}`;
+
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        if (data) {
+          return data.syncedLyrics || data.plainLyrics || null;
+        }
+      }
+    } catch { /* ignore fallback to jiosaavn */ }
+  }
+
   if (!songId) return null;
   const data = await apiFetch(`/songs/${songId}/lyrics`);
   if (!data?.data) return null;
@@ -242,4 +272,40 @@ export async function getSongsByIds(ids) {
     songs.push(...results.filter(Boolean));
   }
   return songs;
+}
+
+/**
+ * Fetch album details by ID.
+ */
+export async function getAlbumById(id) {
+  if (!id) return null;
+  const res = await apiFetch(`/albums?id=${id}`);
+  if (!res?.data) return null;
+  const albumData = res.data;
+  return {
+    id: albumData.id,
+    name: albumData.name || albumData.title || '',
+    image: (Array.isArray(albumData.image) && albumData.image.length > 0) ? 
+           (albumData.image.find(i => i.quality === '500x500')?.url || albumData.image[albumData.image.length - 1].url) : 
+           (typeof albumData.image === 'string' ? albumData.image : ''),
+    songs: Array.isArray(albumData.songs) ? albumData.songs.map(normaliseSong).filter(Boolean) : []
+  };
+}
+
+/**
+ * Fetch artist details by ID.
+ */
+export async function getArtistById(id) {
+  if (!id) return null;
+  const res = await apiFetch(`/artists?id=${id}`);
+  if (!res?.data) return null;
+  const artistData = res.data;
+  return {
+    id: artistData.id,
+    name: artistData.name || artistData.title || '',
+    image: (Array.isArray(artistData.image) && artistData.image.length > 0) ? 
+           (artistData.image.find(i => i.quality === '500x500')?.url || artistData.image[artistData.image.length - 1].url) : 
+           (typeof artistData.image === 'string' ? artistData.image : ''),
+    songs: Array.isArray(artistData.topSongs) ? artistData.topSongs.map(normaliseSong).filter(Boolean) : []
+  };
 }

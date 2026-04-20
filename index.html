@@ -128,6 +128,30 @@
       <div class="history-grid" id="history-grid"></div>
       <div class="empty-state hidden" id="history-empty"><i class="ph ph-music-note"></i><p>Nothing here yet</p><span>Play something to start your history</span></div>
     </section>
+
+    <!-- Detail (Artist / Album) -->
+    <section class="view view--detail hidden" id="view-detail">
+      <div class="detail-header">
+        <button class="detail-back-btn" id="detail-back-btn" aria-label="Go Back"><i class="ph ph-arrow-left"></i></button>
+        <div class="detail-header-content">
+          <div class="detail-art-wrap">
+            <img class="detail-art" id="detail-art" src="" alt="Cover" />
+          </div>
+          <div class="detail-info">
+            <span class="detail-type" id="detail-type">Album</span>
+            <h2 class="detail-title" id="detail-title">Title</h2>
+            <p class="detail-subtitle" id="detail-subtitle"></p>
+            <button class="nav-btn detail-play-all" id="detail-play-all">
+              <i class="ph-fill ph-play"></i> Play All
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="search-results-grid" id="detail-grid"></div>
+      <div class="search-spinner hidden" id="detail-loading">
+        <i class="ph ph-spinner spin-anim"></i> Loading...
+      </div>
+    </section>
   </main>
 
   <!-- ═══ Now Playing Fullscreen Overlay ═══ -->
