@@ -435,6 +435,27 @@ body.cursor-hover .cursor-ring {
 .empty-state span { font-size: 0.85rem; margin-top: 4px; }
 
 /* ══════════════════════════════
+   MULTI-LANE SEARCH VIEWS
+   ══════════════════════════════ */
+.search-section { display: flex; flex-direction: column; gap: 12px; }
+.search-section-title { font-size: 1.25rem; font-weight: 700; color: #fff; padding: 0 28px; }
+.search-h-scroll { display: flex; gap: 16px; overflow-x: auto; padding: 0 28px 16px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.search-h-scroll::-webkit-scrollbar { display: none; }
+.search-h-scroll > * { flex-shrink: 0; width: 160px; scroll-snap-align: start; }
+
+.artist-card, .album-card { background: var(--bg-surface); border-radius: var(--radius-lg); padding: 12px; text-align: center; cursor: pointer; transition: all 0.2s; border: 1px solid var(--border-light); }
+.artist-card:hover, .album-card:hover { transform: translateY(-4px); background: var(--bg-hover); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+.artist-card__img-wrap { width: 100%; aspect-ratio: 1; border-radius: 50%; overflow: hidden; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+.album-card__img-wrap { width: 100%; aspect-ratio: 1; border-radius: var(--radius-md); overflow: hidden; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+.artist-card img, .album-card img { width: 100%; height: 100%; object-fit: cover; }
+.artist-card__name, .album-card__title { font-weight: 600; font-size: 0.95rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+.album-card__artist { font-size: 0.8rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Global interactive spans */
+.artist-link, .album-link { cursor: pointer; pointer-events: auto; }
+.artist-link:hover, .album-link:hover { text-decoration: underline; color: var(--text-secondary); filter: brightness(1.2); }
+
+/* ══════════════════════════════
    DETAIL VIEWS (Artist / Album)
    ══════════════════════════════ */
 .detail-header { position: relative; padding: 60px 28px 24px; border-bottom: 1px solid var(--border-subtle); background: var(--gradient-card); border-radius: 0 0 var(--radius-xl) var(--radius-xl); margin-bottom: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
@@ -452,8 +473,8 @@ body.cursor-hover .cursor-ring {
 .detail-play-all i { font-size: 1.2rem; }
 
 /* Make song card text clickable */
-.song-card__artist.clickable, .song-card__title.clickable { cursor: pointer; pointer-events: auto; }
-.song-card__artist.clickable:hover, .song-card__title.clickable:hover { text-decoration: underline; color: var(--text-primary); }
+.song-card__title.clickable { cursor: pointer; pointer-events: auto; }
+.song-card__title.clickable:hover { text-decoration: underline; color: var(--text-primary); }
 
 /* ══════════════════════════════
    NOW PLAYING OVERLAY

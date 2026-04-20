@@ -289,6 +289,63 @@ function initScrollTop() {
 /* ══════════════════════════════
    SONG CARD
    ══════════════════════════════ */
+function renderArtistsHtml(artists) {
+  if (!artists || !artists.length) return '<span>Unknown Artist</span>';
+  return artists.map(a => 
+    a.id ? `<span class="artist-link" data-id="${a.id}">${decode(a.name)}</span>` : `<span>${decode(a.name)}</span>`
+  ).join(', ');
+}
+
+function attachArtistLinks(container) {
+  container.querySelectorAll('.artist-link').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openArtist(link.dataset.id);
+      if (document.body.classList.contains('np-active')) {
+        document.body.classList.remove('np-active');
+      }
+      if ($('#queue-panel') && !$('#queue-panel').classList.contains('hidden')) {
+        $('#queue-panel').classList.add('hidden');
+      }
+    });
+  });
+}
+
+function createAlbumCard(album) {
+  const card = document.createElement('div');
+  card.className = 'album-card';
+  const imgStr = (Array.isArray(album.image) && album.image.length > 0) ? 
+           (album.image.find(i => i.quality === '150x150')?.url || album.image[album.image.length - 1].url) : 
+           (typeof album.image === 'string' ? album.image : '');
+
+  card.innerHTML = `
+    <div class="album-card__img-wrap">
+      <img src="${imgStr}" loading="lazy" alt="Cover" />
+    </div>
+    <div class="album-card__title" title="${decode(album.title || album.name)}">${decode(album.title || album.name)}</div>
+    <div class="album-card__artist">${decode(album.description || album.language || 'Album')}</div>
+  `;
+  card.addEventListener('click', () => openAlbum(album.id));
+  return card;
+}
+
+function createArtistCard(artist) {
+  const card = document.createElement('div');
+  card.className = 'artist-card';
+  const imgStr = (Array.isArray(artist.image) && artist.image.length > 0) ? 
+           (artist.image.find(i => i.quality === '150x150')?.url || artist.image[artist.image.length - 1].url) : 
+           (typeof artist.image === 'string' ? artist.image : '');
+
+  card.innerHTML = `
+    <div class="artist-card__img-wrap">
+      <img src="${imgStr}" loading="lazy" alt="Artist" />
+    </div>
+    <div class="artist-card__name" title="${decode(artist.title || artist.name)}">${decode(artist.title || artist.name)}</div>
+  `;
+  card.addEventListener('click', () => openArtist(artist.id));
+  return card;
+}
+
 function createSongCard(song, list, idx) {
   const card = document.createElement('div');
   card.className = 'song-card';
@@ -312,7 +369,7 @@ function createSongCard(song, list, idx) {
     </div>
     <div class="song-card__info">
       <div class="song-card__title${song.albumId ? ' clickable' : ''}" title="${decode(song.title)}">${decode(song.title)}</div>
-      <div class="song-card__artist${song.artistId ? ' clickable' : ''}" title="${decode(song.artist)}">${decode(song.artist)}</div>
+      <div class="song-card__artist" title="${decode(song.artist)}">${renderArtistsHtml(song.artists)}</div>
     </div>
   `;
 
@@ -333,13 +390,7 @@ function createSongCard(song, list, idx) {
     });
   }
   
-  const artistEl = card.querySelector('.song-card__artist');
-  if (song.artistId) {
-    artistEl.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openArtist(song.artistId);
-    });
-  }
+  attachArtistLinks(card);
 
   // Like
   card.querySelector('.song-card__like-btn').addEventListener('click', (e) => {
@@ -419,33 +470,72 @@ export function showSearchResults(results, query, isAppend = false) {
   viewSearch.classList.remove('hidden');
   searchResultsTitle.textContent = `Results for "${query}"`;
   
+  const wrapper = $('#search-content-wrapper');
+  
   if (!isAppend) {
-    searchResultsGrid.innerHTML = '';
+    wrapper.innerHTML = '';
     currentSearchQuery = query;
     currentSearchPage = 1;
     isFetchingMore = false;
   }
   
-  if (!results?.length) {
-    if (!isAppend) searchResultsGrid.innerHTML = '<p style="color:var(--text-muted);padding:20px;">No results.</p>';
+  // Actually results comes in as { songs, albums, artists } from searchAll
+  const isEmpty = (!results || (!results.songs?.length && !results.albums?.length && !results.artists?.length));
+  
+  if (isEmpty) {
+    if (!isAppend) {
+      $('#search-empty').classList.remove('hidden');
+    }
     $('#search-loading-spinner')?.classList.add('hidden');
     return;
   }
   
-  results.forEach((s, i) => searchResultsGrid.appendChild(createSongCard(s, results, i)));
+  $('#search-empty').classList.add('hidden');
+
+  if (results.songs?.length) {
+    let s = isAppend ? wrapper.querySelector('#search-songs-scroll') : null;
+    if (!s) {
+      const sec = document.createElement('div');
+      sec.className = 'search-section';
+      sec.innerHTML = `<h3 class="search-section-title">Songs</h3><div class="search-h-scroll" id="search-songs-scroll"></div>`;
+      wrapper.appendChild(sec);
+      s = sec.querySelector('#search-songs-scroll');
+    }
+    results.songs.forEach((song, i) => s.appendChild(createSongCard(song, results.songs, i)));
+  }
+
+  if (results.albums?.length && !isAppend) {
+    const sec = document.createElement('div');
+    sec.className = 'search-section';
+    sec.innerHTML = `<h3 class="search-section-title">Albums</h3><div class="search-h-scroll" id="search-albums-scroll"></div>`;
+    wrapper.appendChild(sec);
+    const s = sec.querySelector('#search-albums-scroll');
+    results.albums.forEach(album => s.appendChild(createAlbumCard(album)));
+  }
+
+  if (results.artists?.length && !isAppend) {
+    const sec = document.createElement('div');
+    sec.className = 'search-section';
+    sec.innerHTML = `<h3 class="search-section-title">Artists</h3><div class="search-h-scroll" id="search-artists-scroll"></div>`;
+    wrapper.appendChild(sec);
+    const s = sec.querySelector('#search-artists-scroll');
+    results.artists.forEach(artist => s.appendChild(createArtistCard(artist)));
+  }
   
-  // Show spinner and mount observer
+  // Show spinner and mount observer for infinite scrolling Songs
   const spinner = $('#search-loading-spinner');
-  if (spinner) {
+  if (spinner && results.songs?.length) {
     spinner.classList.remove('hidden');
     if (!searchObserver) {
       searchObserver = new IntersectionObserver(async (entries) => {
         if (entries[0].isIntersecting && !isFetchingMore && currentSearchQuery) {
           isFetchingMore = true;
           currentSearchPage++;
-          const nextResults = await Api.searchSongs(currentSearchQuery, 20, currentSearchPage);
-          if (nextResults?.length) {
-            showSearchResults(nextResults, currentSearchQuery, true);
+          // When paginating, we only care about songs, so searchSongs directly.
+          const nextSongs = await Api.searchSongs(currentSearchQuery, 20, currentSearchPage);
+          if (nextSongs?.length) {
+            // fake the searchAll object structure for appending
+            showSearchResults({ songs: nextSongs, albums: [], artists: [] }, currentSearchQuery, true);
           } else {
             spinner.classList.add('hidden'); // no more results
           }
@@ -558,7 +648,8 @@ function showPlaylists() {
 export function updatePlayerUI(song) {
   if (!song) return;
   playerSong.textContent = decode(song.title);
-  playerArtist.textContent = decode(song.artist);
+  playerArtist.innerHTML = renderArtistsHtml(song.artists);
+  attachArtistLinks(playerArtist);
   playerArt.src = song.image || '';
   playerArt.onerror = () => { playerArt.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect width='56' height='56' fill='%23181822'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' fill='%23444' font-size='22'%3E♫%3C/text%3E%3C/svg%3E"; };
   syncPlayerLike();
@@ -574,7 +665,10 @@ export function updatePlayerUI(song) {
   if (npArt)   npArt.src = song.image || '';
   if (npBg)    npBg.style.backgroundImage = `url("${song.image}")`;
   if (npTitle) npTitle.textContent = decode(song.title);
-  if (npArtist) npArtist.textContent = decode(song.artist);
+  if (npArtist) {
+    npArtist.innerHTML = renderArtistsHtml(song.artists);
+    attachArtistLinks(npArtist);
+  }
 }
 
 function syncPlayerLike() {
@@ -640,10 +734,14 @@ function renderQueue() {
       <img class="queue-item__art" src="${song.image}" alt="" loading="lazy" onerror="this.style.display='none'" />
       <div class="queue-item__text">
         <div class="queue-item__title">${decode(song.title)}</div>
-        <div class="queue-item__artist">${decode(song.artist)}</div>
+        <div class="queue-item__artist">${renderArtistsHtml(song.artists)}</div>
       </div>
     `;
-    item.addEventListener('click', () => Player.playSong(song, pl, i));
+    item.addEventListener('click', (e) => {
+      if (e.target.closest('.artist-link')) return;
+      Player.playSong(song, pl, i);
+    });
+    attachArtistLinks(item);
     list.appendChild(item);
   });
 }

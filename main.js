@@ -148,7 +148,8 @@ function wireSearch() {
 
     searchTimer = setTimeout(async () => {
       try {
-        const results = await API.searchSongs(q, 30);
+        // Now using global searchAll instead of just songs
+        const results = await API.searchAll(q, 15);
         UI.showSearchResults(results, q);
       } catch {
         UI.showToast('Search failed', 'ph ph-warning-circle');

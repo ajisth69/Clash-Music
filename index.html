@@ -92,11 +92,15 @@
 
     <!-- Search -->
     <section class="view view--search hidden" id="view-search">
-      <h2 class="view-title" id="search-results-title">Search Results</h2>
-      <div class="search-results-grid" id="search-results-grid"></div>
-      <div class="search-spinner hidden" id="search-loading-spinner">
-        <i class="ph ph-spinner spin-anim"></i> Loading more...
+      <div class="view-header" style="padding-bottom:10px">
+        <h2 class="view-title" id="search-results-title">Search Results</h2>
+        <p class="view-subtitle" id="search-results-sub">Here is what we found</p>
       </div>
+      <div class="search-spinner hidden" id="search-loading-spinner" style="margin-left:28px">
+        <i class="ph ph-spinner spin-anim"></i> Searching...
+      </div>
+      <div id="search-content-wrapper" style="padding: 16px 0; display: flex; flex-direction: column; gap: 32px;"></div>
+      <div class="empty-state hidden" id="search-empty"><i class="ph ph-magnifying-glass"></i><p>No results found</p><span>Try exploring different keywords</span></div>
     </section>
 
     <!-- Liked -->

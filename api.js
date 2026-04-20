@@ -164,11 +164,17 @@ function normaliseSong(raw) {
 
   let language = raw.language || '';
 
-  let artistId = '';
+  let artists = [];
   if (raw.artists?.primary?.length) {
-    artistId = raw.artists.primary[0].id || '';
+    artists = raw.artists.primary.map(a => ({ id: a.id || '', name: a.name || 'Unknown' }));
+  } else if (typeof raw.primaryArtists === 'string') {
+    artists = raw.primaryArtists.split(',').map(n => ({ id: '', name: n.trim() }));
+  } else if (typeof raw.artist === 'string') {
+    artists = raw.artist.split(',').map(n => ({ id: '', name: n.trim() }));
   }
   
+  let artistString = artists.map(a => a.name).join(', ') || 'Unknown Artist';
+
   let albumId = '';
   if (raw.album && raw.album.id) {
     albumId = raw.album.id || '';
@@ -177,8 +183,9 @@ function normaliseSong(raw) {
   return {
     id:        raw.id   || '',
     title:     raw.name || raw.title || 'Unknown',
-    artist:    artist   || 'Unknown Artist',
-    artistId:  artistId,
+    artist:    artistString,
+    artists:   artists,
+    artistId:  artists.length ? artists[0].id : '',
     album:     raw.album?.name || raw.album || '',
     albumId:   albumId,
     image:     image,
@@ -202,6 +209,25 @@ export async function init() {
  */
 export function getActiveEndpoint() {
   return activeAPI;
+}
+
+/**
+ * Search all categories by query string.
+ */
+export async function searchAll(query, limit = 10) {
+  if (!query?.trim()) return null;
+  const encoded = encodeURIComponent(query);
+  const [songsRes, albumsRes, artistsRes] = await Promise.all([
+    apiFetch(`/search/songs?query=${encoded}&limit=${limit * 2}`),
+    apiFetch(`/search/albums?query=${encoded}&limit=${limit}`),
+    apiFetch(`/search/artists?query=${encoded}&limit=${limit}`)
+  ]);
+
+  return {
+    songs: songsRes?.data?.results?.map(normaliseSong).filter(Boolean) || [],
+    albums: albumsRes?.data?.results || [],
+    artists: artistsRes?.data?.results || []
+  };
 }
 
 /**
