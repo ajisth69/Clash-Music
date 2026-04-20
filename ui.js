@@ -1011,6 +1011,8 @@ export function initUI() {
   $('#btn-play')?.addEventListener('click', (e) => { addRipple(e.currentTarget, e); Player.toggle(); });
   $('#btn-prev')?.addEventListener('click', (e) => { addRipple(e.currentTarget, e); Player.prev(); });
   $('#btn-next')?.addEventListener('click', (e) => { addRipple(e.currentTarget, e); Player.next(); });
+  $('#btn-rewind')?.addEventListener('click', (e) => { addRipple(e.currentTarget, e); Player.skip(-10); });
+  $('#btn-forward')?.addEventListener('click', (e) => { addRipple(e.currentTarget, e); Player.skip(10); });
 
   // Shuffle / Repeat
   $('#btn-shuffle')?.addEventListener('click', () => { Player.toggleShuffle(); syncShuffleUI(); showToast(Player.isShuffleOn() ? 'Shuffle on' : 'Shuffle off', 'ph ph-shuffle'); });
@@ -1020,6 +1022,8 @@ export function initUI() {
   $('#np-play')?.addEventListener('click', () => Player.toggle());
   $('#np-prev')?.addEventListener('click', () => Player.prev());
   $('#np-next')?.addEventListener('click', () => Player.next());
+  $('#np-rewind')?.addEventListener('click', () => Player.skip(-10));
+  $('#np-forward')?.addEventListener('click', () => Player.skip(10));
   // Click outside NP content to close
   $('#np-overlay')?.addEventListener('click', (e) => {
     if (!e.target.closest('.np-content') && !e.target.closest('.np-close')) closeNowPlaying();

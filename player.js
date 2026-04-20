@@ -107,6 +107,11 @@ export function seekTo(pct) {
   audio.currentTime = (pct / 100) * audio.duration;
 }
 
+export function skip(seconds) {
+  if (!audio.src || isNaN(audio.duration)) return;
+  audio.currentTime = Math.min(Math.max(audio.currentTime + seconds, 0), audio.duration);
+}
+
 export function setVolume(vol) {
   audio.volume = Math.min(1, Math.max(0, vol));
   Storage.saveVolume(audio.volume);
@@ -141,7 +146,13 @@ export function restoreState() {
   const vol = Storage.getVolume();
   audio.volume = vol;
   const last = Storage.getLastPlayed();
-  if (last) { currentSong = last; emit('trackchange', { song: last }); }
+  if (last) { 
+    currentSong = last; 
+    playlist = [last];
+    currentIdx = 0;
+    audio.src = last.streamUrl; // Crucial for play() to work on toggle!
+    emit('trackchange', { song: last }); 
+  }
 }
 
 /* ── Events ── */
