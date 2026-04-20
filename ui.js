@@ -123,6 +123,74 @@ async function downloadSong(song, btn = null) {
   }
 }
 
+/* ── Bulk Download All Songs in Playlist ── */
+let isBulkDownloading = false;
+
+async function bulkDownloadPlaylist(songs, playlistName, btn) {
+  if (isBulkDownloading) {
+    showToast('A bulk download is already in progress', 'ph ph-warning-circle');
+    return;
+  }
+  if (!songs?.length) {
+    showToast('Playlist is empty', 'ph ph-warning-circle');
+    return;
+  }
+
+  isBulkDownloading = true;
+  const icon = btn.querySelector('i');
+  const label = btn.querySelector('span');
+  btn.classList.add('downloading');
+  if (icon) icon.className = 'ph ph-spinner';
+
+  const total = songs.length;
+  let success = 0;
+  let failed = 0;
+
+  showToast(`Starting bulk download of ${total} songs…`, 'ph ph-download-simple');
+
+  for (let i = 0; i < total; i++) {
+    const song = songs[i];
+    if (label) label.textContent = `${i + 1}/${total}`;
+
+    if (!song?.streamUrl) { failed++; continue; }
+
+    const name = decode(song.title).replace(/[<>:"/\\|?*]+/g, '').trim();
+    const art  = decode(song.artist).replace(/[<>:"/\\|?*]+/g, '').trim();
+    const file = `${name} - ${art}.m4a`;
+
+    try {
+      const res = await fetch(song.streamUrl, { mode: 'cors' });
+      if (!res.ok) throw 0;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = file;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      success++;
+    } catch {
+      const a = document.createElement('a');
+      a.href = song.streamUrl; a.download = file; a.target = '_blank'; a.rel = 'noopener';
+      document.body.appendChild(a); a.click(); a.remove();
+      success++;
+    }
+
+    // Small delay between downloads so the browser doesn't choke
+    if (i < total - 1) await new Promise(r => setTimeout(r, 1200));
+  }
+
+  btn.classList.remove('downloading');
+  if (icon) icon.className = 'ph ph-download-simple';
+  if (label) label.textContent = 'Download All';
+  isBulkDownloading = false;
+
+  if (failed > 0) {
+    showToast(`Downloaded ${success}/${total} songs (${failed} failed)`, 'ph ph-warning-circle');
+  } else {
+    showToast(`All ${total} songs downloaded ✓`, 'ph ph-check-circle');
+  }
+}
+
 /* ── Ambient Glow ── */
 function updateGlow(img) {
   if (!ambientGlow) return;
@@ -399,7 +467,12 @@ function showPlaylists() {
     
     hdr.innerHTML = `
       <h3 style="font-family: var(--font-display); font-size: 1.2rem; margin: 0;">${decode(p.name)}</h3>
-      <button class="playlist-share-btn" data-id="${p.id}" title="Share Playlist" style="background:rgba(255,255,255,0.05); border:none; border-radius:4px; padding:6px; color:#fff; cursor:pointer;" aria-label="Share Playlist"><i class="ph ph-share-network"></i></button>
+      <span style="font-size:0.75rem; color:var(--text-muted);">${p.songs.length} songs</span>
+      <button class="playlist-share-btn" data-id="${p.id}" title="Share Playlist" style="background:rgba(255,255,255,0.05); border:none; border-radius:6px; padding:6px 8px; color:#fff; cursor:pointer; display:inline-flex; align-items:center; gap:4px; transition: background 0.2s;" aria-label="Share Playlist"><i class="ph ph-share-network"></i></button>
+      <button class="playlist-dl-all-btn" data-id="${p.id}" title="Download All Songs" style="background: linear-gradient(135deg, rgba(var(--accent-rgb, 139,92,246), 0.15), rgba(var(--accent-rgb, 139,92,246), 0.05)); border:1px solid rgba(var(--accent-rgb, 139,92,246), 0.25); border-radius:6px; padding:6px 12px; color:#fff; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-size:0.75rem; font-weight:500; transition: all 0.2s;" aria-label="Download All Songs">
+        <i class="ph ph-download-simple"></i>
+        <span>Download All</span>
+      </button>
     `;
     pContainer.appendChild(hdr);
     
@@ -412,6 +485,18 @@ function showPlaylists() {
       navigator.clipboard.writeText(url).then(() => {
         showToast('Playlist link copied!', 'ph ph-link');
       });
+    });
+    
+    // Bind download all event
+    const dlAllBtn = hdr.querySelector('.playlist-dl-all-btn');
+    dlAllBtn.addEventListener('click', () => {
+      bulkDownloadPlaylist(p.songs, p.name, dlAllBtn);
+    });
+    
+    // Hover effects for buttons
+    [shareBtn, dlAllBtn].forEach(b => {
+      b.addEventListener('mouseenter', () => { b.style.filter = 'brightness(1.3)'; });
+      b.addEventListener('mouseleave', () => { b.style.filter = ''; });
     });
     
     // Render Playlist Songs Grid
