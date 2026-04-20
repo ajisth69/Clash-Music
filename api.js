@@ -323,7 +323,8 @@ export async function getAlbumById(id) {
  */
 export async function getArtistById(id) {
   if (!id) return null;
-  const res = await apiFetch(`/artists?id=${id}`);
+  // Use a high songCount to ensure we get a large discography sample instead of default 5-10
+  const res = await apiFetch(`/artists?id=${id}&songCount=100&albumCount=50`);
   if (!res?.data) return null;
   const artistData = res.data;
   return {
