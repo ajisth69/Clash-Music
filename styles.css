@@ -8,8 +8,8 @@
   --bg-elevated:   #111118;
   --bg-card:       rgba(255, 255, 255, 0.025);
   --bg-card-hover: rgba(255, 255, 255, 0.058);
-  --bg-glass:      rgba(12, 12, 20, 0.8);
-  --bg-player:     rgba(8, 8, 14, 0.96);
+  --bg-glass:      rgba(12, 12, 20, 0.65);
+  --bg-player:     rgba(8, 8, 14, 0.70);
 
   --text-primary:   #f0f0f5;
   --text-secondary: #85879c;
@@ -118,7 +118,7 @@ body.cursor-hover .cursor-ring {
 
 .bg-orbs { position: fixed; inset: 0; z-index: -3; pointer-events: none; overflow: hidden; }
 
-.orb { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.15; }
+.orb { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.20; transition: background 2s ease-in-out; }
 .orb--1 { width: 500px; height: 500px; background: var(--accent); top: -15%; left: -8%; animation: orbDrift 28s ease-in-out infinite; }
 .orb--2 { width: 400px; height: 400px; background: var(--pink); bottom: 5%; right: -10%; animation: orbDrift 22s ease-in-out infinite reverse; }
 .orb--3 { width: 350px; height: 350px; background: var(--sky); top: 50%; left: 45%; animation: orbDrift 30s ease-in-out infinite; animation-delay: -10s; }
@@ -169,7 +169,7 @@ body.cursor-hover .cursor-ring {
   display: flex; align-items: center; justify-content: space-between;
   gap: 14px; padding: 0 24px;
   background: var(--bg-glass);
-  backdrop-filter: blur(30px) saturate(1.4);
+  backdrop-filter: blur(40px) saturate(1.8);
   border-bottom: 1px solid var(--border-subtle);
   z-index: 900;
 }
@@ -632,7 +632,7 @@ body.cursor-hover .cursor-ring {
 .player-bar {
   position: fixed; bottom: 0; left: 0; right: 0;
   height: var(--player-h); background: var(--bg-player);
-  backdrop-filter: blur(32px) saturate(1.4);
+  backdrop-filter: blur(40px) saturate(2);
   border-top: 1px solid var(--border-subtle);
   box-shadow: 0 -4px 40px rgba(0,0,0,0.5);
   z-index: 1000; display: flex; flex-direction: column;

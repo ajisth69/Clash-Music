@@ -199,6 +199,27 @@ function updateGlow(img) {
   ambientGlow.classList.add('active');
 }
 
+/* ── Dynamic Colors ── */
+function extractAndSetColors(url) {
+  if (!url || typeof ColorThief === 'undefined') return;
+  const img = new Image();
+  img.crossOrigin = 'Anonymous';
+  img.src = url;
+  img.onload = () => {
+    try {
+      const ct = new ColorThief();
+      const palette = ct.getPalette(img, 3);
+      if (palette && palette.length >= 3) {
+        document.documentElement.style.setProperty('--accent', `rgb(${palette[0].join(',')})`);
+        document.documentElement.style.setProperty('--pink', `rgb(${palette[1].join(',')})`);
+        document.documentElement.style.setProperty('--sky', `rgb(${palette[2].join(',')})`);
+      }
+    } catch (e) {
+      console.warn("ColorThief failed or canvas tainted", e);
+    }
+  };
+}
+
 /* Custom cursor removed — native cursor is smoother */
 
 /* ══════════════════════════════
@@ -524,6 +545,7 @@ export function updatePlayerUI(song) {
   playerArt.onerror = () => { playerArt.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect width='56' height='56' fill='%23181822'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' fill='%23444' font-size='22'%3E♫%3C/text%3E%3C/svg%3E"; };
   syncPlayerLike();
   updateGlow(song.image);
+  extractAndSetColors(song.image);
   document.title = `${decode(song.title)} — Clash Musics`;
 
   // Now Playing overlay
