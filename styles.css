@@ -920,11 +920,12 @@ body.cursor-hover .cursor-ring {
   .category-section--featured { margin-left: 14px; margin-right: 14px; padding: 16px 14px !important; }
   .player-bar__inner { padding: 0 10px; }
   
+  .hide-mobile { display: none !important; }
   .player-bar__more-btn { display: grid !important; }
   .player-bar__info .player-bar__action-btn { display: none; } /* Hide Like, Share, Download */
   .player-bar__right #btn-queue, .player-bar__right #btn-expand { display: none; }
   
-  .player-bar__time { display: none; }
+  .player-bar__time, .player-bar__volume { display: none; }
   .hero { padding: 20px 14px 8px; }
   .song-card { flex: 0 0 148px; }
   .credit-badge { right: 10px; font-size: 0.65rem; }
