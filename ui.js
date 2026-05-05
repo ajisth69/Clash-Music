@@ -1186,6 +1186,58 @@ export function initUI() {
     const btn = e.target.closest('.ctrl-btn, .nav-btn, .np-btn');
     if (btn) addRipple(btn, e);
   });
+
+  // Mobile Player More Menu
+  const moreBtn = $('#btn-more-options');
+  const moreMenu = $('#player-more-menu');
+  if (moreBtn && moreMenu) {
+    moreBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      
+      const curSong = Player.getCurrentSong();
+      const liked = curSong ? Storage.isLiked(curSong.id) : false;
+      const likeIco = $('#menu-like-icon');
+      if (likeIco) {
+        likeIco.className = liked ? 'ph-fill ph-heart' : 'ph ph-heart';
+        likeIco.style.color = liked ? 'var(--pink)' : '';
+      }
+      
+      const shuffOn = Player.isShuffleOn();
+      const shuffIco = $('#menu-shuffle-icon');
+      if (shuffIco) shuffIco.style.color = shuffOn ? 'var(--accent-soft)' : '';
+
+      const repMode = Player.getRepeatMode();
+      const repIco = $('#menu-repeat-icon');
+      if (repIco) {
+        repIco.className = repMode === 2 ? 'ph ph-repeat-once' : 'ph ph-repeat';
+        repIco.style.color = repMode !== 0 ? 'var(--accent-soft)' : '';
+      }
+
+      if (window.innerWidth > 480) {
+        $('#menu-shuffle').style.display = 'none';
+        $('#menu-repeat').style.display = 'none';
+      } else {
+        $('#menu-shuffle').style.display = 'flex';
+        $('#menu-repeat').style.display = 'flex';
+      }
+
+      moreMenu.classList.toggle('hidden');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!moreMenu.contains(e.target) && e.target !== moreBtn) {
+        moreMenu.classList.add('hidden');
+      }
+    });
+
+    $('#menu-like')?.addEventListener('click', () => { $('#player-like-btn')?.click(); moreMenu.classList.add('hidden'); });
+    $('#menu-share')?.addEventListener('click', () => { $('#player-share-btn')?.click(); moreMenu.classList.add('hidden'); });
+    $('#menu-dl')?.addEventListener('click', () => { $('#player-dl-btn')?.click(); moreMenu.classList.add('hidden'); });
+    $('#menu-queue')?.addEventListener('click', () => { $('#btn-queue')?.click(); moreMenu.classList.add('hidden'); });
+    $('#menu-expand')?.addEventListener('click', () => { $('#btn-expand')?.click(); moreMenu.classList.add('hidden'); });
+    $('#menu-shuffle')?.addEventListener('click', () => { $('#btn-shuffle')?.click(); moreMenu.classList.add('hidden'); });
+    $('#menu-repeat')?.addEventListener('click', () => { $('#btn-repeat')?.click(); moreMenu.classList.add('hidden'); });
+  }
 }
 
 function updateVolIcon(vol) {

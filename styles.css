@@ -669,6 +669,58 @@ body.cursor-hover .cursor-ring {
 .shortcut-row span { font-size: 0.8rem; color: var(--text-secondary); }
 
 /* ══════════════════════════════
+   PLAYER MORE MENU (MOBILE)
+   ══════════════════════════════ */
+.player-more-menu {
+  position: fixed;
+  bottom: calc(var(--player-h) + 16px);
+  right: 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 1001;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+  min-width: 160px;
+  transform-origin: bottom right;
+  animation: menuScaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes menuScaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.player-more-menu .menu-item {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  padding: 12px 20px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  width: 100%;
+  font-family: var(--font-body);
+  transition: background 0.2s, color 0.2s;
+}
+.player-more-menu .menu-item:hover {
+  background: rgba(255,255,255,0.06);
+}
+.player-more-menu .menu-item i {
+  font-size: 1.15rem;
+  color: var(--text-secondary);
+  transition: color 0.2s;
+}
+.player-more-menu .menu-item:hover i {
+  color: var(--text-primary);
+}
+
+.player-bar__more-btn { display: none !important; }
+
+/* ══════════════════════════════
    PLAYER BAR
    ══════════════════════════════ */
 .player-bar {
@@ -867,7 +919,11 @@ body.cursor-hover .cursor-ring {
   .category-section { padding: 0 14px; }
   .category-section--featured { margin-left: 14px; margin-right: 14px; padding: 16px 14px !important; }
   .player-bar__inner { padding: 0 10px; }
-  .player-bar__right .ctrl-btn--sm { display: none; }
+  
+  .player-bar__more-btn { display: grid !important; }
+  .player-bar__info .player-bar__action-btn { display: none; } /* Hide Like, Share, Download */
+  .player-bar__right #btn-queue, .player-bar__right #btn-expand { display: none; }
+  
   .player-bar__time { display: none; }
   .hero { padding: 20px 14px 8px; }
   .song-card { flex: 0 0 148px; }
@@ -883,7 +939,7 @@ body.cursor-hover .cursor-ring {
   .topbar__nav { gap: 1px; }
   .nav-btn { width: 34px; height: 34px; font-size: 17px; }
   #search-input { padding: 8px 34px; font-size: 0.8rem; }
-  .player-bar__controls .ctrl-btn--sm { display: none; }
+  .player-bar__controls #btn-shuffle, .player-bar__controls #btn-repeat { display: none; }
   .ctrl-btn { width: 34px; height: 34px; font-size: 15px; }
   .ctrl-btn--play { width: 40px; height: 40px; font-size: 17px; }
   .player-bar__art-wrap { width: 40px; height: 40px; }

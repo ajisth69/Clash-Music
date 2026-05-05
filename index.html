@@ -227,6 +227,17 @@
     </div>
   </div>
 
+  <!-- ═══ Player More Menu (Mobile) ═══ -->
+  <div class="player-more-menu hidden" id="player-more-menu">
+    <button class="menu-item" id="menu-like"><i class="ph ph-heart" id="menu-like-icon"></i> Like</button>
+    <button class="menu-item" id="menu-share"><i class="ph ph-share-network"></i> Share</button>
+    <button class="menu-item" id="menu-dl"><i class="ph ph-download-simple"></i> Download</button>
+    <button class="menu-item" id="menu-queue"><i class="ph ph-queue"></i> Queue</button>
+    <button class="menu-item" id="menu-expand"><i class="ph ph-arrows-out-simple"></i> Fullscreen</button>
+    <button class="menu-item" id="menu-shuffle"><i class="ph ph-shuffle" id="menu-shuffle-icon"></i> Shuffle</button>
+    <button class="menu-item" id="menu-repeat"><i class="ph ph-repeat" id="menu-repeat-icon"></i> Repeat</button>
+  </div>
+
   <!-- ═══ Player Bar ═══ -->
   <footer class="player-bar" id="player-bar">
     <div class="player-bar__progress-wrap" id="progress-wrap">
@@ -262,6 +273,7 @@
       <div class="player-bar__right">
         <button class="ctrl-btn ctrl-btn--sm" id="btn-queue" title="Queue"><i class="ph ph-queue"></i></button>
         <button class="ctrl-btn ctrl-btn--sm" id="btn-expand" title="Now Playing"><i class="ph ph-arrows-out-simple"></i></button>
+        <button class="ctrl-btn ctrl-btn--sm player-bar__more-btn" id="btn-more-options" title="More Options"><i class="ph ph-dots-three-vertical"></i></button>
         <span class="player-bar__time" id="player-time">0:00 / 0:00</span>
         <div class="player-bar__volume">
           <button class="ctrl-btn ctrl-btn--vol" id="btn-mute" title="Mute"><i class="ph-fill ph-speaker-high" id="volume-icon"></i></button>
