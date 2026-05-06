@@ -1115,6 +1115,7 @@ export function initUI() {
   btnLiked.addEventListener('click', showLiked);
   btnPlaylists.addEventListener('click', showPlaylists);
   btnHistory.addEventListener('click', showHistory);
+  $('.topbar__brand')?.addEventListener('click', showHome);
 
   // ── Keyboard Shortcuts ──
   document.addEventListener('keydown', (e) => {

@@ -174,7 +174,7 @@ body.cursor-hover .cursor-ring {
   z-index: 900;
 }
 
-.topbar__brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.topbar__brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; cursor: pointer; }
 
 .brand-logo {
   width: 34px; height: 34px; border-radius: var(--radius-sm);
@@ -912,10 +912,10 @@ body.cursor-hover .cursor-ring {
    RESPONSIVE
    ══════════════════════════════ */
 @media (max-width: 768px) {
-  .topbar { padding: 0 14px; gap: 6px; }
-  .topbar__title { font-size: 1.05rem; }
+  .topbar { padding: 0 14px; gap: 8px; }
+  .topbar__title { display: none; }
   .search-kbd { display: none; }
-  .topbar__search { max-width: 200px; }
+  .topbar__search { max-width: none; flex: 1; }
   .category-section { padding: 0 14px; }
   .category-section--featured { margin-left: 14px; margin-right: 14px; padding: 16px 14px !important; }
   .player-bar__inner { padding: 0 10px; }
