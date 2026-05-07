@@ -1373,17 +1373,21 @@ function initSettings() {
   $('#vis-toggle')?.addEventListener('change', (e) => {
     Storage.saveVisualizerEnabled(e.target.checked);
   });
-  $('#vis-mode-select')?.addEventListener('change', (e) => {
-    Vis.setVisualizerMode(e.target.value);
+
+  // Init all custom selects (glassmorphism dropdowns)
+  initCustomSelects();
+
+  // Vis mode custom select callback
+  onCustomSelect('vis-mode-select', (val) => {
+    Vis.setVisualizerMode(val);
   });
 
-  // EQ Preset
-  $('#eq-preset-select')?.addEventListener('change', (e) => {
-    const name = e.target.value;
-    if (name !== 'Custom') {
-      Vis.setEQPreset(name);
+  // EQ preset custom select callback
+  onCustomSelect('eq-preset-select', (val) => {
+    if (val !== 'Custom') {
+      Vis.setEQPreset(val);
       syncEQSliders();
-      showToast(`EQ: ${name}`, 'ph ph-sliders-horizontal');
+      showToast(`EQ: ${val}`, 'ph ph-sliders-horizontal');
     }
   });
 
@@ -1394,7 +1398,7 @@ function initSettings() {
       const val = parseFloat(slider.value);
       Vis.setBandGain(band, val);
       slider.closest('.eq-band').querySelector('.eq-val').textContent = val > 0 ? `+${val}` : val;
-      $('#eq-preset-select').value = 'Custom';
+      setCustomSelectValue('eq-preset-select', 'Custom');
     });
   });
 
@@ -1425,11 +1429,8 @@ function syncSettingsUI() {
 
   const visToggle = $('#vis-toggle');
   if (visToggle) visToggle.checked = Storage.getVisualizerEnabled();
-  const visMode = $('#vis-mode-select');
-  if (visMode) visMode.value = Storage.getVisualizerMode();
-
-  const eqPreset = $('#eq-preset-select');
-  if (eqPreset) eqPreset.value = Storage.getEQPreset();
+  setCustomSelectValue('vis-mode-select', Storage.getVisualizerMode());
+  setCustomSelectValue('eq-preset-select', Storage.getEQPreset());
   syncEQSliders();
 
   const cfToggle = $('#crossfade-toggle');
@@ -1587,4 +1588,61 @@ function startNPVisualizer() {
 
 function stopNPVisualizer() {
   Vis.stopVisualizer();
+}
+
+/* ══════════════════════════════
+   CUSTOM SELECT HELPERS
+   ══════════════════════════════ */
+const _customSelectCallbacks = {};
+
+function initCustomSelects() {
+  $$('.custom-select').forEach(sel => {
+    const trigger = sel.querySelector('.custom-select__trigger');
+    const options = sel.querySelectorAll('.custom-select__option');
+
+    // Toggle open/close
+    trigger?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // Close all other custom selects first
+      $$('.custom-select.open').forEach(s => { if (s !== sel) s.classList.remove('open'); });
+      sel.classList.toggle('open');
+    });
+
+    // Option click
+    options.forEach(opt => {
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const val = opt.dataset.val;
+        // Update visual state
+        sel.querySelector('.custom-select__trigger span').textContent = opt.textContent;
+        sel.dataset.value = val;
+        options.forEach(o => o.classList.toggle('active', o === opt));
+        sel.classList.remove('open');
+        // Trigger callback
+        if (_customSelectCallbacks[sel.id]) _customSelectCallbacks[sel.id](val);
+      });
+    });
+  });
+
+  // Close all on outside click
+  document.addEventListener('click', () => {
+    $$('.custom-select.open').forEach(s => s.classList.remove('open'));
+  });
+}
+
+function onCustomSelect(id, callback) {
+  _customSelectCallbacks[id] = callback;
+}
+
+function setCustomSelectValue(id, value) {
+  const sel = $(`#${id}`);
+  if (!sel) return;
+  sel.dataset.value = value;
+  const opt = sel.querySelector(`.custom-select__option[data-val="${value}"]`);
+  if (opt) {
+    sel.querySelector('.custom-select__trigger span').textContent = opt.textContent;
+    sel.querySelectorAll('.custom-select__option').forEach(o => o.classList.toggle('active', o === opt));
+  } else {
+    sel.querySelector('.custom-select__trigger span').textContent = value;
+  }
 }

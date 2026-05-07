@@ -343,11 +343,14 @@
         </div>
         <div class="settings-row">
           <span>Mode</span>
-          <select class="settings-select" id="vis-mode-select">
-            <option value="bars">Bars</option>
-            <option value="wave">Wave</option>
-            <option value="circle">Circle</option>
-          </select>
+          <div class="custom-select" id="vis-mode-select" data-value="bars">
+            <div class="custom-select__trigger"><span>Bars</span><i class="ph ph-caret-down"></i></div>
+            <div class="custom-select__options">
+              <div class="custom-select__option active" data-val="bars">Bars</div>
+              <div class="custom-select__option" data-val="wave">Wave</div>
+              <div class="custom-select__option" data-val="circle">Circle</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -356,13 +359,24 @@
         <div class="settings-label"><i class="ph ph-sliders-horizontal"></i> Equalizer</div>
         <div class="settings-row">
           <span>Preset</span>
-          <select class="settings-select" id="eq-preset-select">
-            <option>Flat</option><option>Bass Boost</option><option>Treble Boost</option>
-            <option>Vocal</option><option>Rock</option><option>Pop</option>
-            <option>Jazz</option><option>Classical</option><option>Dance/EDM</option>
-            <option>Hip-Hop</option><option>Acoustic</option><option>Deep Bass</option>
-            <option>Custom</option>
-          </select>
+          <div class="custom-select" id="eq-preset-select" data-value="Flat">
+            <div class="custom-select__trigger"><span>Flat</span><i class="ph ph-caret-down"></i></div>
+            <div class="custom-select__options">
+              <div class="custom-select__option active" data-val="Flat">Flat</div>
+              <div class="custom-select__option" data-val="Bass Boost">Bass Boost</div>
+              <div class="custom-select__option" data-val="Treble Boost">Treble Boost</div>
+              <div class="custom-select__option" data-val="Vocal">Vocal</div>
+              <div class="custom-select__option" data-val="Rock">Rock</div>
+              <div class="custom-select__option" data-val="Pop">Pop</div>
+              <div class="custom-select__option" data-val="Jazz">Jazz</div>
+              <div class="custom-select__option" data-val="Classical">Classical</div>
+              <div class="custom-select__option" data-val="Dance/EDM">Dance/EDM</div>
+              <div class="custom-select__option" data-val="Hip-Hop">Hip-Hop</div>
+              <div class="custom-select__option" data-val="Acoustic">Acoustic</div>
+              <div class="custom-select__option" data-val="Deep Bass">Deep Bass</div>
+              <div class="custom-select__option" data-val="Custom">Custom</div>
+            </div>
+          </div>
         </div>
         <div class="eq-sliders" id="eq-sliders">
           <div class="eq-band"><label>60</label><input type="range" class="eq-range" data-band="0" min="-12" max="12" step="1" value="0" orient="vertical" /><span class="eq-val">0</span></div>
