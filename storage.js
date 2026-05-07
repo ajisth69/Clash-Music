@@ -12,6 +12,16 @@ const KEYS = {
   PLAYLISTS: 'clash_playlists',
   QUEUE:     'clash_queue',
   QUEUE_IDX: 'clash_queue_idx',
+  EQ_PRESET:      'clash_eq_preset',
+  EQ_CUSTOM:      'clash_eq_custom',
+  VIS_ENABLED:    'clash_visualizer_enabled',
+  VIS_MODE:       'clash_visualizer_mode',
+  CROSSFADE_ON:   'clash_crossfade_enabled',
+  CROSSFADE_DUR:  'clash_crossfade_duration',
+  GAPLESS:        'clash_gapless',
+  THEME:          'clash_theme',
+  RECENT_SEARCHES:'clash_recent_searches',
+  SLEEP_TIMER:    'clash_sleep_timer',
 };
 
 function readJSON(key, fallback) {
@@ -256,3 +266,49 @@ export function importPlaylist(name, songsArray) {
   writeJSON(KEYS.PLAYLISTS, pList);
   return newPlaylist;
 }
+
+/* ══════════════════════════════════════════
+   SETTINGS — Equalizer, Visualizer, etc.
+   ══════════════════════════════════════════ */
+
+/* ── Equalizer ── */
+export function getEQPreset()          { return localStorage.getItem(KEYS.EQ_PRESET) || 'Flat'; }
+export function saveEQPreset(name)     { localStorage.setItem(KEYS.EQ_PRESET, name); }
+export function getEQCustom()          { return readJSON(KEYS.EQ_CUSTOM, [0,0,0,0,0]); }
+export function saveEQCustom(gains)    { writeJSON(KEYS.EQ_CUSTOM, gains); }
+
+/* ── Visualizer ── */
+export function getVisualizerEnabled() { return readJSON(KEYS.VIS_ENABLED, true); }
+export function saveVisualizerEnabled(b){ writeJSON(KEYS.VIS_ENABLED, !!b); }
+export function getVisualizerMode()    { return localStorage.getItem(KEYS.VIS_MODE) || 'bars'; }
+export function saveVisualizerMode(m)  { localStorage.setItem(KEYS.VIS_MODE, m); }
+
+/* ── Crossfade ── */
+export function getCrossfadeEnabled()  { return readJSON(KEYS.CROSSFADE_ON, false); }
+export function saveCrossfadeEnabled(b){ writeJSON(KEYS.CROSSFADE_ON, !!b); }
+export function getCrossfadeDuration() { const v = parseFloat(localStorage.getItem(KEYS.CROSSFADE_DUR)); return isNaN(v) ? 5 : v; }
+export function saveCrossfadeDuration(s){ localStorage.setItem(KEYS.CROSSFADE_DUR, String(s)); }
+
+/* ── Gapless ── */
+export function getGapless()           { return readJSON(KEYS.GAPLESS, false); }
+export function saveGapless(b)         { writeJSON(KEYS.GAPLESS, !!b); }
+
+/* ── Theme ── */
+export function getTheme()             { return localStorage.getItem(KEYS.THEME) || 'dark'; }
+export function saveTheme(t)           { localStorage.setItem(KEYS.THEME, t); }
+
+/* ── Recent Searches ── */
+export function getRecentSearches()    { return readJSON(KEYS.RECENT_SEARCHES, []); }
+export function addRecentSearch(q) {
+  if (!q?.trim()) return;
+  let list = getRecentSearches().filter(s => s !== q.trim());
+  list.unshift(q.trim());
+  if (list.length > 8) list = list.slice(0, 8);
+  writeJSON(KEYS.RECENT_SEARCHES, list);
+}
+export function clearRecentSearches()  { writeJSON(KEYS.RECENT_SEARCHES, []); }
+
+/* ── Sleep Timer ── */
+export function getSleepTimer()        { return readJSON(KEYS.SLEEP_TIMER, null); }
+export function saveSleepTimer(ts)     { writeJSON(KEYS.SLEEP_TIMER, ts); }
+export function clearSleepTimer()      { localStorage.removeItem(KEYS.SLEEP_TIMER); }

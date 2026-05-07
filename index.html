@@ -41,11 +41,24 @@
     </div>
     <nav class="topbar__nav">
       <button class="nav-btn" id="btn-home" aria-label="Home" title="Home"><i class="ph ph-house"></i></button>
-      <button class="nav-btn" id="btn-liked" aria-label="Liked" title="Liked Songs"><i class="ph ph-heart"></i></button>
-      <button class="nav-btn" id="btn-playlists" aria-label="Playlists" title="My Playlists"><i class="ph ph-playlist"></i></button>
-      <button class="nav-btn" id="btn-history" aria-label="History" title="History"><i class="ph ph-clock-counter-clockwise"></i></button>
+      <!-- Library dropdown trigger -->
+      <div class="nav-dropdown-wrap">
+        <button class="nav-btn" id="btn-library" aria-label="Library" title="Library"><i class="ph ph-books"></i></button>
+        <div class="library-dropdown hidden" id="library-dropdown">
+          <button class="lib-item" id="btn-liked"><i class="ph ph-heart"></i> Liked Songs</button>
+          <button class="lib-item" id="btn-playlists"><i class="ph ph-playlist"></i> My Playlists</button>
+          <button class="lib-item" id="btn-history"><i class="ph ph-clock-counter-clockwise"></i> History</button>
+        </div>
+      </div>
+      <button class="nav-btn" id="btn-settings" aria-label="Settings" title="Settings"><i class="ph ph-gear-six"></i></button>
     </nav>
   </header>
+
+  <!-- Recent Searches -->
+  <div class="recent-searches hidden" id="recent-searches">
+    <div class="recent-searches__header"><span>Recent</span><button id="clear-recent" class="recent-clear">Clear</button></div>
+    <div class="recent-searches__chips" id="recent-chips"></div>
+  </div>
 
   <!-- ═══ Main ═══ -->
   <main class="main-content" id="main-content">
@@ -161,6 +174,7 @@
   <!-- ═══ Now Playing Fullscreen Overlay ═══ -->
   <div class="np-overlay hidden" id="np-overlay">
     <div class="np-bg" id="np-bg"></div>
+    <canvas class="np-visualizer" id="np-visualizer"></canvas>
     <div class="np-content">
       <div class="np-art-wrap">
         <img class="np-art" id="np-art" src="" alt="Album Art" />
@@ -239,6 +253,16 @@
       <i class="ph-fill ph-speaker-high" id="menu-vol-icon"></i>
       <input type="range" class="volume-slider menu-vol-slider" id="menu-vol-slider" min="0" max="1" step="0.01" value="0.7" style="margin-left: 8px; flex: 1;" aria-label="Volume" />
     </div>
+    <div class="menu-divider"></div>
+    <div class="menu-label">Sleep Timer</div>
+    <div class="menu-sleep-row" id="menu-sleep-row">
+      <button class="sleep-chip" data-min="15">15m</button>
+      <button class="sleep-chip" data-min="30">30m</button>
+      <button class="sleep-chip" data-min="45">45m</button>
+      <button class="sleep-chip" data-min="60">1h</button>
+      <button class="sleep-chip sleep-chip--off hidden" id="sleep-off" data-min="0"><i class="ph ph-x"></i></button>
+    </div>
+    <span class="sleep-status hidden" id="sleep-status"></span>
   </div>
 
   <!-- ═══ Player Bar ═══ -->
@@ -289,6 +313,90 @@
   <!-- Credit & Scroll-to-top -->
   <div class="credit-badge">Made by <strong>Ajisth</strong></div>
   <button class="scroll-top hidden" id="scroll-top" aria-label="Scroll to top"><i class="ph ph-caret-up"></i></button>
+
+  <!-- ═══ Settings Panel ═══ -->
+  <div class="settings-panel hidden" id="settings-panel">
+    <div class="settings-header">
+      <h3><i class="ph ph-gear-six"></i> Settings</h3>
+      <button class="settings-close" id="settings-close"><i class="ph ph-x"></i></button>
+    </div>
+    <div class="settings-body">
+
+      <!-- Theme -->
+      <div class="settings-section">
+        <div class="settings-label"><i class="ph ph-palette"></i> Theme</div>
+        <div class="theme-grid" id="theme-grid">
+          <button class="theme-btn active" data-theme="dark"><span class="theme-swatch" style="background:#0a0a12"></span>Dark</button>
+          <button class="theme-btn" data-theme="amoled"><span class="theme-swatch" style="background:#000"></span>AMOLED</button>
+          <button class="theme-btn" data-theme="midnight"><span class="theme-swatch" style="background:#0d1b2a"></span>Midnight</button>
+          <button class="theme-btn" data-theme="purple"><span class="theme-swatch" style="background:#1a0a2e"></span>Purple Haze</button>
+          <button class="theme-btn" data-theme="sunset"><span class="theme-swatch" style="background:#1a1008"></span>Sunset</button>
+        </div>
+      </div>
+
+      <!-- Visualizer -->
+      <div class="settings-section">
+        <div class="settings-label"><i class="ph ph-waveform"></i> Audio Visualizer</div>
+        <div class="settings-row">
+          <span>Enabled</span>
+          <label class="toggle-switch"><input type="checkbox" id="vis-toggle" checked /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="settings-row">
+          <span>Mode</span>
+          <select class="settings-select" id="vis-mode-select">
+            <option value="bars">Bars</option>
+            <option value="wave">Wave</option>
+            <option value="circle">Circle</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Equalizer -->
+      <div class="settings-section">
+        <div class="settings-label"><i class="ph ph-sliders-horizontal"></i> Equalizer</div>
+        <div class="settings-row">
+          <span>Preset</span>
+          <select class="settings-select" id="eq-preset-select">
+            <option>Flat</option><option>Bass Boost</option><option>Treble Boost</option>
+            <option>Vocal</option><option>Rock</option><option>Pop</option>
+            <option>Jazz</option><option>Classical</option><option>Dance/EDM</option>
+            <option>Hip-Hop</option><option>Acoustic</option><option>Deep Bass</option>
+            <option>Custom</option>
+          </select>
+        </div>
+        <div class="eq-sliders" id="eq-sliders">
+          <div class="eq-band"><label>60</label><input type="range" class="eq-range" data-band="0" min="-12" max="12" step="1" value="0" orient="vertical" /><span class="eq-val">0</span></div>
+          <div class="eq-band"><label>230</label><input type="range" class="eq-range" data-band="1" min="-12" max="12" step="1" value="0" orient="vertical" /><span class="eq-val">0</span></div>
+          <div class="eq-band"><label>910</label><input type="range" class="eq-range" data-band="2" min="-12" max="12" step="1" value="0" orient="vertical" /><span class="eq-val">0</span></div>
+          <div class="eq-band"><label>3.6k</label><input type="range" class="eq-range" data-band="3" min="-12" max="12" step="1" value="0" orient="vertical" /><span class="eq-val">0</span></div>
+          <div class="eq-band"><label>14k</label><input type="range" class="eq-range" data-band="4" min="-12" max="12" step="1" value="0" orient="vertical" /><span class="eq-val">0</span></div>
+        </div>
+      </div>
+
+      <!-- Crossfade -->
+      <div class="settings-section">
+        <div class="settings-label"><i class="ph ph-intersect"></i> Crossfade</div>
+        <div class="settings-row">
+          <span>Enabled</span>
+          <label class="toggle-switch"><input type="checkbox" id="crossfade-toggle" /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="settings-row">
+          <span>Duration</span>
+          <div class="range-with-val"><input type="range" id="crossfade-dur" min="1" max="12" step="1" value="5" class="settings-range" /><span id="crossfade-dur-val">5s</span></div>
+        </div>
+      </div>
+
+      <!-- Gapless -->
+      <div class="settings-section">
+        <div class="settings-label"><i class="ph ph-link-simple"></i> Gapless Playback</div>
+        <div class="settings-row">
+          <span>Enabled</span>
+          <label class="toggle-switch"><input type="checkbox" id="gapless-toggle" /><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+
+    </div>
+  </div>
 
   <div class="toast-container" id="toast-container"></div>
   <script type="module" src="main.js"></script>

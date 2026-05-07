@@ -151,6 +151,7 @@ function wireSearch() {
         // Now using global searchAll instead of just songs
         const results = await API.searchAll(q, 15);
         UI.showSearchResults(results, q);
+        UI.saveRecentSearch(q);
       } catch {
         UI.showToast('Search failed', 'ph ph-warning-circle');
       }
@@ -174,7 +175,7 @@ function wireSearch() {
       input.blur(); // close mobile keyboard
       UI.showToast(`Searching for "${q}"...`, 'ph ph-spinner spin-anim');
       API.searchAll(q, 15)
-        .then(results => UI.showSearchResults(results, q))
+        .then(results => { UI.showSearchResults(results, q); UI.saveRecentSearch(q); })
         .catch(() => UI.showToast('Search failed', 'ph ph-warning-circle'));
     }
   });

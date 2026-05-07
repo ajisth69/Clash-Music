@@ -19,6 +19,7 @@
 import * as Player  from './player.js';
 import * as Storage from './storage.js';
 import * as Api     from './api.js';
+import * as Vis     from './visualizer.js';
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -452,7 +453,9 @@ export function renderSongRow(container, songs) {
    ══════════════════════════════ */
 function hideAll() {
   [viewHome, viewSearch, viewLiked, viewPlaylists, viewHistory, viewDetail].forEach(v => v?.classList.add('hidden'));
-  [btnHome, btnLiked, btnPlaylists, btnHistory].forEach(b => b?.classList.remove('active'));
+  btnHome?.classList.remove('active');
+  // Close settings if navigating
+  $('#settings-panel')?.classList.add('hidden');
 }
 
 export function showHome() {
@@ -726,10 +729,15 @@ function renderQueue() {
     return;
   }
 
+  let dragIdx = null;
+
   pl.forEach((song, i) => {
     const item = document.createElement('div');
     item.className = `queue-item${i === ci ? ' active' : ''}`;
+    item.draggable = true;
+    item.dataset.idx = i;
     item.innerHTML = `
+      <span class="queue-item__drag" title="Drag to reorder"><i class="ph ph-dots-six-vertical"></i></span>
       <span class="queue-item__num">${i + 1}</span>
       <img class="queue-item__art" src="${song.image}" alt="" loading="lazy" onerror="this.style.display='none'" />
       <div class="queue-item__text">
@@ -737,8 +745,68 @@ function renderQueue() {
         <div class="queue-item__artist">${renderArtistsHtml(song.artists)}</div>
       </div>
     `;
+
+    // Drag events
+    item.addEventListener('dragstart', (e) => {
+      dragIdx = i;
+      item.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    item.addEventListener('dragend', () => {
+      item.classList.remove('dragging');
+      list.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+      dragIdx = null;
+    });
+    item.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      list.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+      item.classList.add('drag-over');
+    });
+    item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+    item.addEventListener('drop', (e) => {
+      e.preventDefault();
+      item.classList.remove('drag-over');
+      const toIdx = parseInt(item.dataset.idx);
+      if (dragIdx !== null && dragIdx !== toIdx) {
+        Player.reorderQueue(dragIdx, toIdx);
+        renderQueue();
+        showToast('Queue reordered', 'ph ph-arrows-down-up');
+      }
+    });
+
+    // Touch drag for mobile
+    let touchStartY = 0;
+    let touchClone = null;
+    const dragHandle = item.querySelector('.queue-item__drag');
+    dragHandle?.addEventListener('touchstart', (e) => {
+      dragIdx = i;
+      touchStartY = e.touches[0].clientY;
+      item.classList.add('dragging');
+    }, { passive: true });
+    dragHandle?.addEventListener('touchmove', (e) => {
+      const touch = e.touches[0];
+      const target = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.queue-item');
+      list.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+      if (target && target !== item) target.classList.add('drag-over');
+    }, { passive: true });
+    dragHandle?.addEventListener('touchend', () => {
+      item.classList.remove('dragging');
+      const overEl = list.querySelector('.drag-over');
+      if (overEl) {
+        const toIdx = parseInt(overEl.dataset.idx);
+        overEl.classList.remove('drag-over');
+        if (dragIdx !== null && dragIdx !== toIdx) {
+          Player.reorderQueue(dragIdx, toIdx);
+          renderQueue();
+          showToast('Queue reordered', 'ph ph-arrows-down-up');
+        }
+      }
+      dragIdx = null;
+    });
+
     item.addEventListener('click', (e) => {
-      if (e.target.closest('.artist-link')) return;
+      if (e.target.closest('.artist-link') || e.target.closest('.queue-item__drag')) return;
       Player.playSong(song, pl, i);
     });
     attachArtistLinks(item);
@@ -770,6 +838,7 @@ function openNowPlaying() {
   overlay.classList.remove('hidden');
   overlay.style.animation = 'npSlideIn 0.45s var(--ease) forwards';
   document.body.style.overflow = 'hidden';
+  startNPVisualizer();
 }
 
 function closeNowPlaying() {
@@ -782,6 +851,7 @@ function closeNowPlaying() {
     overlay.style.animation = '';
     document.body.style.overflow = '';
     npOpen = false;
+    stopNPVisualizer();
   });
 }
 
@@ -1124,12 +1194,15 @@ export function initUI() {
     if (Player.getCurrentSong()) toggleNowPlaying();
   });
 
-  // Navigation
+  // Navigation — Home + Brand logo
   btnHome.addEventListener('click', showHome);
-  btnLiked.addEventListener('click', showLiked);
-  btnPlaylists.addEventListener('click', showPlaylists);
-  btnHistory.addEventListener('click', showHistory);
   $('.topbar__brand')?.addEventListener('click', showHome);
+
+  // Init new feature modules
+  initLibraryDropdown();
+  initSettings();
+  initRecentSearches();
+  initSleepTimer();
 
   // ── Keyboard Shortcuts ──
   document.addEventListener('keydown', (e) => {
@@ -1139,6 +1212,8 @@ export function initUI() {
     if (e.key === '/' && !isTyping) { e.preventDefault(); searchInput.focus(); return; }
     if (e.key === 'Escape') {
       if (npOpen) { closeNowPlaying(); return; }
+      const settings = $('#settings-panel');
+      if (settings && !settings.classList.contains('hidden')) { settings.classList.add('hidden'); return; }
       const queue = $('#queue-panel');
       if (queue && !queue.classList.contains('hidden')) { queue.classList.add('hidden'); return; }
       const playlistModal = $('#playlist-modal');
@@ -1268,4 +1343,248 @@ function adjustVol(delta) {
   let v = Math.min(1, Math.max(0, parseFloat(slider.value) + delta));
   slider.value = v;
   Player.setVolume(v); Storage.saveVolume(v); updateVolIcon(v);
+}
+
+/* ══════════════════════════════
+   SETTINGS PANEL
+   ══════════════════════════════ */
+function initSettings() {
+  const panel = $('#settings-panel');
+  if (!panel) return;
+
+  $('#btn-settings')?.addEventListener('click', () => {
+    panel.classList.toggle('hidden');
+    if (!panel.classList.contains('hidden')) syncSettingsUI();
+  });
+  $('#settings-close')?.addEventListener('click', () => panel.classList.add('hidden'));
+
+  // Theme
+  $$('#theme-grid .theme-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const theme = btn.dataset.theme;
+      applyTheme(theme);
+      Storage.saveTheme(theme);
+      $$('#theme-grid .theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === theme));
+      showToast(`Theme: ${btn.textContent.trim()}`, 'ph ph-palette');
+    });
+  });
+
+  // Visualizer toggle
+  $('#vis-toggle')?.addEventListener('change', (e) => {
+    Storage.saveVisualizerEnabled(e.target.checked);
+  });
+  $('#vis-mode-select')?.addEventListener('change', (e) => {
+    Vis.setVisualizerMode(e.target.value);
+  });
+
+  // EQ Preset
+  $('#eq-preset-select')?.addEventListener('change', (e) => {
+    const name = e.target.value;
+    if (name !== 'Custom') {
+      Vis.setEQPreset(name);
+      syncEQSliders();
+      showToast(`EQ: ${name}`, 'ph ph-sliders-horizontal');
+    }
+  });
+
+  // EQ Band sliders
+  $$('.eq-range').forEach(slider => {
+    slider.addEventListener('input', () => {
+      const band = parseInt(slider.dataset.band);
+      const val = parseFloat(slider.value);
+      Vis.setBandGain(band, val);
+      slider.closest('.eq-band').querySelector('.eq-val').textContent = val > 0 ? `+${val}` : val;
+      $('#eq-preset-select').value = 'Custom';
+    });
+  });
+
+  // Crossfade
+  $('#crossfade-toggle')?.addEventListener('change', (e) => {
+    Storage.saveCrossfadeEnabled(e.target.checked);
+    showToast(e.target.checked ? 'Crossfade on' : 'Crossfade off', 'ph ph-intersect');
+  });
+  $('#crossfade-dur')?.addEventListener('input', (e) => {
+    const v = e.target.value;
+    Storage.saveCrossfadeDuration(parseInt(v));
+    $('#crossfade-dur-val').textContent = v + 's';
+  });
+
+  // Gapless
+  $('#gapless-toggle')?.addEventListener('change', (e) => {
+    Storage.saveGapless(e.target.checked);
+    showToast(e.target.checked ? 'Gapless on' : 'Gapless off', 'ph ph-link-simple');
+  });
+
+  // Restore saved theme on load
+  applyTheme(Storage.getTheme());
+}
+
+function syncSettingsUI() {
+  const theme = Storage.getTheme();
+  $$('#theme-grid .theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === theme));
+
+  const visToggle = $('#vis-toggle');
+  if (visToggle) visToggle.checked = Storage.getVisualizerEnabled();
+  const visMode = $('#vis-mode-select');
+  if (visMode) visMode.value = Storage.getVisualizerMode();
+
+  const eqPreset = $('#eq-preset-select');
+  if (eqPreset) eqPreset.value = Storage.getEQPreset();
+  syncEQSliders();
+
+  const cfToggle = $('#crossfade-toggle');
+  if (cfToggle) cfToggle.checked = Storage.getCrossfadeEnabled();
+  const cfDur = $('#crossfade-dur');
+  if (cfDur) { cfDur.value = Storage.getCrossfadeDuration(); $('#crossfade-dur-val').textContent = cfDur.value + 's'; }
+
+  const glToggle = $('#gapless-toggle');
+  if (glToggle) glToggle.checked = Storage.getGapless();
+}
+
+function syncEQSliders() {
+  if (!Vis.isInitialized()) return;
+  const gains = Vis.getBandGains();
+  $$('.eq-range').forEach(slider => {
+    const band = parseInt(slider.dataset.band);
+    slider.value = gains[band] || 0;
+    slider.closest('.eq-band').querySelector('.eq-val').textContent = gains[band] > 0 ? `+${gains[band]}` : gains[band];
+  });
+}
+
+function applyTheme(theme) {
+  document.body.className = document.body.className.replace(/theme-\S+/g, '').trim();
+  if (theme && theme !== 'dark') {
+    document.body.classList.add(`theme-${theme}`);
+  }
+}
+
+/* ══════════════════════════════
+   LIBRARY DROPDOWN
+   ══════════════════════════════ */
+function initLibraryDropdown() {
+  const btn = $('#btn-library');
+  const dropdown = $('#library-dropdown');
+  if (!btn || !dropdown) return;
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle('hidden');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!dropdown.contains(e.target) && e.target !== btn) {
+      dropdown.classList.add('hidden');
+    }
+  });
+
+  $('#btn-liked')?.addEventListener('click', () => { dropdown.classList.add('hidden'); showLiked(); });
+  $('#btn-playlists')?.addEventListener('click', () => { dropdown.classList.add('hidden'); showPlaylists(); });
+  $('#btn-history')?.addEventListener('click', () => { dropdown.classList.add('hidden'); showHistory(); });
+}
+
+/* ══════════════════════════════
+   RECENT SEARCHES
+   ══════════════════════════════ */
+function initRecentSearches() {
+  const input = $('#search-input');
+  const container = $('#recent-searches');
+  const chipsEl = $('#recent-chips');
+  if (!input || !container || !chipsEl) return;
+
+  function renderChips() {
+    const searches = Storage.getRecentSearches();
+    chipsEl.innerHTML = '';
+    if (!searches.length) { container.classList.add('hidden'); return; }
+    searches.forEach(q => {
+      const chip = document.createElement('button');
+      chip.className = 'recent-chip';
+      chip.textContent = q;
+      chip.addEventListener('click', () => {
+        input.value = q;
+        input.dispatchEvent(new Event('input'));
+        container.classList.add('hidden');
+      });
+      chipsEl.appendChild(chip);
+    });
+  }
+
+  input.addEventListener('focus', () => {
+    if (!input.value.trim()) {
+      renderChips();
+      const searches = Storage.getRecentSearches();
+      if (searches.length) container.classList.remove('hidden');
+    }
+  });
+
+  input.addEventListener('input', () => {
+    if (input.value.trim()) container.classList.add('hidden');
+  });
+
+  input.addEventListener('blur', () => {
+    setTimeout(() => container.classList.add('hidden'), 200);
+  });
+
+  $('#clear-recent')?.addEventListener('click', () => {
+    Storage.clearRecentSearches();
+    container.classList.add('hidden');
+  });
+}
+
+export function saveRecentSearch(query) {
+  Storage.addRecentSearch(query);
+}
+
+/* ══════════════════════════════
+   SLEEP TIMER
+   ══════════════════════════════ */
+function initSleepTimer() {
+  $$('.sleep-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const min = parseInt(chip.dataset.min);
+      if (min === 0) {
+        Player.clearSleepTimerFn();
+        showToast('Sleep timer cancelled', 'ph ph-alarm');
+      } else {
+        Player.setSleepTimer(min);
+        showToast(`Sleep timer: ${min} minutes`, 'ph ph-moon');
+      }
+      syncSleepUI();
+    });
+  });
+
+  document.addEventListener('player:sleeptimer', () => {
+    showToast('💤 Sleep timer — Music paused', 'ph ph-moon');
+    syncSleepUI();
+  });
+}
+
+function syncSleepUI() {
+  const endTime = Player.getSleepEndTime();
+  const statusEl = $('#sleep-status');
+  const offBtn = $('#sleep-off');
+
+  $$('.sleep-chip:not(.sleep-chip--off)').forEach(c => c.classList.remove('active'));
+
+  if (endTime) {
+    const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 60000));
+    if (statusEl) { statusEl.textContent = `⏱ ${remaining}m remaining`; statusEl.classList.remove('hidden'); }
+    if (offBtn) offBtn.classList.remove('hidden');
+  } else {
+    if (statusEl) statusEl.classList.add('hidden');
+    if (offBtn) offBtn.classList.add('hidden');
+  }
+}
+
+/* ══════════════════════════════
+   VISUALIZER (NP overlay)
+   ══════════════════════════════ */
+function startNPVisualizer() {
+  const canvas = $('#np-visualizer');
+  if (canvas && Storage.getVisualizerEnabled()) {
+    Vis.startVisualizer(canvas);
+  }
+}
+
+function stopNPVisualizer() {
+  Vis.stopVisualizer();
 }
