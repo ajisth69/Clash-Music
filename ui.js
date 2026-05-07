@@ -1042,7 +1042,21 @@ export function initUI() {
     Player.setVolume(v);
     Storage.saveVolume(v);
     updateVolIcon(v);
+    const menuVolSlider = $('#menu-vol-slider');
+    if (menuVolSlider) menuVolSlider.value = v;
   });
+
+  const menuVolSlider = $('#menu-vol-slider');
+  if (menuVolSlider) {
+    menuVolSlider.value = Storage.getVolume();
+    menuVolSlider.addEventListener('input', () => {
+      const v = parseFloat(menuVolSlider.value);
+      Player.setVolume(v);
+      Storage.saveVolume(v);
+      updateVolIcon(v);
+      if (volSlider) volSlider.value = v;
+    });
+  }
 
   $('#btn-mute')?.addEventListener('click', () => {
     const cur = parseFloat(volSlider.value);
@@ -1242,9 +1256,10 @@ export function initUI() {
 }
 
 function updateVolIcon(vol) {
-  const i = $('#volume-icon'); if (!i) return;
   const v = parseFloat(vol);
-  i.className = v === 0 ? 'ph-fill ph-speaker-x' : v < 0.4 ? 'ph-fill ph-speaker-low' : 'ph-fill ph-speaker-high';
+  const className = v === 0 ? 'ph-fill ph-speaker-x' : v < 0.4 ? 'ph-fill ph-speaker-low' : 'ph-fill ph-speaker-high';
+  const i = $('#volume-icon'); if (i) i.className = className;
+  const mi = $('#menu-vol-icon'); if (mi) mi.className = className;
 }
 
 function adjustVol(delta) {

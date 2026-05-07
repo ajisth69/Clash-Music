@@ -563,7 +563,7 @@ body.cursor-hover .cursor-ring {
   font-variant-numeric: tabular-nums;
 }
 
-.np-controls { display: flex; align-items: center; gap: 14px; }
+.np-controls { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
 .np-btn {
   width: 44px; height: 44px; border-radius: 50%;
   border: none; background: transparent; color: var(--text-primary);

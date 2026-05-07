@@ -160,7 +160,6 @@
 
   <!-- ═══ Now Playing Fullscreen Overlay ═══ -->
   <div class="np-overlay hidden" id="np-overlay">
-    <button class="np-close" id="np-close" aria-label="Close"><i class="ph ph-caret-down"></i></button>
     <div class="np-bg" id="np-bg"></div>
     <div class="np-content">
       <div class="np-art-wrap">
@@ -236,6 +235,10 @@
     <button class="menu-item" id="menu-expand"><i class="ph ph-arrows-out-simple"></i> Fullscreen</button>
     <button class="menu-item" id="menu-shuffle"><i class="ph ph-shuffle" id="menu-shuffle-icon"></i> Shuffle</button>
     <button class="menu-item" id="menu-repeat"><i class="ph ph-repeat" id="menu-repeat-icon"></i> Repeat</button>
+    <div class="menu-item menu-volume" style="cursor: default;">
+      <i class="ph-fill ph-speaker-high" id="menu-vol-icon"></i>
+      <input type="range" class="volume-slider menu-vol-slider" id="menu-vol-slider" min="0" max="1" step="0.01" value="0.7" style="margin-left: 8px; flex: 1;" aria-label="Volume" />
+    </div>
   </div>
 
   <!-- ═══ Player Bar ═══ -->
