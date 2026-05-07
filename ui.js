@@ -347,7 +347,7 @@ function createArtistCard(artist) {
   return card;
 }
 
-function createSongCard(song, list, idx) {
+function createSongCard(song, list, idx, playlistId = null) {
   const card = document.createElement('div');
   card.className = 'song-card';
   card.dataset.songId = song.id;
@@ -364,7 +364,7 @@ function createSongCard(song, list, idx) {
       </div>
       ${dur ? `<span class="song-card__duration">${dur}</span>` : ''}
       <button class="song-card__like-btn ${liked ? 'liked' : ''}" aria-label="Like"><i class="${liked ? 'ph-fill' : 'ph'} ph-heart"></i></button>
-      <button class="song-card__playlist-btn" aria-label="Add to Playlist"><i class="ph-bold ph-plus"></i></button>
+      <button class="song-card__playlist-btn" aria-label="${playlistId ? 'Remove from Playlist' : 'Add to Playlist'}"><i class="${playlistId ? 'ph-bold ph-minus' : 'ph-bold ph-plus'}"></i></button>
       <button class="song-card__share-btn" aria-label="Share Song"><i class="ph ph-share-network"></i></button>
       <button class="song-card__dl-btn" aria-label="Download"><i class="ph ph-download-simple"></i></button>
     </div>
@@ -402,10 +402,17 @@ function createSongCard(song, list, idx) {
     showToast(l ? `Liked "${decode(song.title)}"` : 'Removed', l ? 'ph-fill ph-heart' : 'ph ph-heart-break');
   });
 
-  // Playlist Add
+  // Playlist Add / Remove
   card.querySelector('.song-card__playlist-btn').addEventListener('click', (e) => {
     e.stopPropagation();
-    openPlaylistModal(song);
+    if (playlistId) {
+      if (Storage.removeFromPlaylist(playlistId, song.id)) {
+        showToast('Removed from playlist', 'ph ph-trash');
+        showPlaylists();
+      }
+    } else {
+      openPlaylistModal(song);
+    }
   });
 
   // Share
@@ -639,7 +646,7 @@ function showPlaylists() {
     if (!p.songs.length) {
       grid.innerHTML = '<p style="color:var(--text-muted); font-size: 0.85rem;">Empty playlist</p>';
     } else {
-      p.songs.forEach((s, i) => grid.appendChild(createSongCard(s, p.songs, i)));
+      p.songs.forEach((s, i) => grid.appendChild(createSongCard(s, p.songs, i, p.id)));
     }
     pContainer.appendChild(grid);
   });
@@ -744,6 +751,7 @@ function renderQueue() {
         <div class="queue-item__title">${decode(song.title)}</div>
         <div class="queue-item__artist">${renderArtistsHtml(song.artists)}</div>
       </div>
+      <button class="queue-item__add-btn" title="Add to Playlist" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; padding: 4px; border-radius: 4px; display: flex; align-items: center; justify-content: center;"><i class="ph ph-list-plus" style="font-size: 1.2rem;"></i></button>
     `;
 
     // Drag events
@@ -806,8 +814,12 @@ function renderQueue() {
     });
 
     item.addEventListener('click', (e) => {
-      if (e.target.closest('.artist-link') || e.target.closest('.queue-item__drag')) return;
+      if (e.target.closest('.artist-link') || e.target.closest('.queue-item__drag') || e.target.closest('.queue-item__add-btn')) return;
       Player.playSong(song, pl, i);
+    });
+    item.querySelector('.queue-item__add-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openPlaylistModal(song);
     });
     attachArtistLinks(item);
     list.appendChild(item);
@@ -1157,6 +1169,13 @@ export function initUI() {
     downloadSong(s, playerDlBtn);
   });
 
+  // Player Add to Playlist
+  $('#player-playlist-btn')?.addEventListener('click', () => {
+    const s = Player.getCurrentSong();
+    if (!s) { showToast('No song selected', 'ph ph-warning-circle'); return; }
+    openPlaylistModal(s);
+  });
+
   // Player Share
   const execShare = () => {
     const s = Player.getCurrentSong();
@@ -1321,6 +1340,7 @@ export function initUI() {
     });
 
     $('#menu-like')?.addEventListener('click', () => { $('#player-like-btn')?.click(); moreMenu.classList.add('hidden'); });
+    $('#menu-playlist')?.addEventListener('click', () => { $('#player-playlist-btn')?.click(); moreMenu.classList.add('hidden'); });
     $('#menu-share')?.addEventListener('click', () => { $('#player-share-btn')?.click(); moreMenu.classList.add('hidden'); });
     $('#menu-dl')?.addEventListener('click', () => { $('#player-dl-btn')?.click(); moreMenu.classList.add('hidden'); });
     $('#menu-queue')?.addEventListener('click', () => { $('#btn-queue')?.click(); moreMenu.classList.add('hidden'); });

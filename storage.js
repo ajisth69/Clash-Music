@@ -254,6 +254,22 @@ export function addToPlaylist(playlistId, song) {
   return 'added';
 }
 
+export function removeFromPlaylist(playlistId, songId) {
+  if (!playlistId || !songId) return false;
+  const pList = getPlaylists();
+  const playlist = pList.find(p => p.id === playlistId);
+  if (!playlist) return false;
+  
+  const initialLength = playlist.songs.length;
+  playlist.songs = playlist.songs.filter(s => s.id !== songId);
+  
+  if (playlist.songs.length !== initialLength) {
+    writeJSON(KEYS.PLAYLISTS, pList);
+    return true;
+  }
+  return false;
+}
+
 export function importPlaylist(name, songsArray) {
   if (!name || !songsArray?.length) return null;
   const pList = getPlaylists();
