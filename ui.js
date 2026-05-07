@@ -1,5 +1,4 @@
 /**
- * ═══════════════════════════════════════════
  *  ui.js — Final UI Controller
  *
  *  Features:
@@ -13,7 +12,6 @@
  *    • Scroll-to-top
  *    • Ambient glow
  *    • Duration badges on cards
- * ═══════════════════════════════════════════
  */
 
 import * as Player  from './player.js';
@@ -62,9 +60,7 @@ let isFetchingMore     = false;
 let currentPlaylistSong = null; // For modal
 
 
-/* ══════════════════════════════
-   HELPERS
-   ══════════════════════════════ */
+/* HELPERS */
 
 function decode(str) {
   const t = document.createElement('textarea');
@@ -224,9 +220,7 @@ function extractAndSetColors(url) {
 
 /* Custom cursor removed — native cursor is smoother */
 
-/* ══════════════════════════════
-   RIPPLE EFFECT
-   ══════════════════════════════ */
+/* RIPPLE EFFECT */
 function addRipple(el, e) {
   const rect = el.getBoundingClientRect();
   const ripple = document.createElement('span');
@@ -239,9 +233,7 @@ function addRipple(el, e) {
   ripple.addEventListener('animationend', () => ripple.remove());
 }
 
-/* ══════════════════════════════
-   3D CARD TILT
-   ══════════════════════════════ */
+/* 3D CARD TILT */
 function initCardTilt(card) {
   card.addEventListener('mousemove', (e) => {
     const rect = card.getBoundingClientRect();
@@ -255,9 +247,7 @@ function initCardTilt(card) {
   });
 }
 
-/* ══════════════════════════════
-   SCROLL REVEAL
-   ══════════════════════════════ */
+/* SCROLL REVEAL */
 function initReveal() {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(en => {
@@ -271,9 +261,7 @@ function initReveal() {
   $$('.reveal').forEach(el => observer.observe(el));
 }
 
-/* ══════════════════════════════
-   SCROLL TO TOP
-   ══════════════════════════════ */
+/* SCROLL TO TOP */
 function initScrollTop() {
   const btn = $('#scroll-top');
   if (!btn) return;
@@ -287,9 +275,7 @@ function initScrollTop() {
   });
 }
 
-/* ══════════════════════════════
-   SONG CARD
-   ══════════════════════════════ */
+/* SONG CARD */
 function renderArtistsHtml(artists) {
   if (!artists || !artists.length) return '<span>Unknown Artist</span>';
   return artists.map(a => 
@@ -442,9 +428,7 @@ function syncCardLike(card, liked) {
   ico.className = liked ? 'ph-fill ph-heart' : 'ph ph-heart';
 }
 
-/* ══════════════════════════════
-   RENDER
-   ══════════════════════════════ */
+/* RENDER */
 export function renderSongRow(container, songs) {
   container.innerHTML = '';
   if (!songs?.length) {
@@ -455,9 +439,7 @@ export function renderSongRow(container, songs) {
   highlightPlaying();
 }
 
-/* ══════════════════════════════
-   VIEW MANAGEMENT
-   ══════════════════════════════ */
+/* VIEW MANAGEMENT */
 function hideAll() {
   [viewHome, viewSearch, viewLiked, viewPlaylists, viewHistory, viewDetail].forEach(v => v?.classList.add('hidden'));
   btnHome?.classList.remove('active');
@@ -652,9 +634,7 @@ function showPlaylists() {
   });
 }
 
-/* ══════════════════════════════
-   PLAYER UI SYNC
-   ══════════════════════════════ */
+/* PLAYER UI SYNC */
 export function updatePlayerUI(song) {
   if (!song) return;
   playerSong.textContent = decode(song.title);
@@ -719,9 +699,7 @@ export function highlightPlaying() {
   $$('.song-card').forEach(c => c.classList.toggle('is-playing', c.dataset.songId === cur?.id));
 }
 
-/* ══════════════════════════════
-   QUEUE PANEL
-   ══════════════════════════════ */
+/* QUEUE PANEL */
 function renderQueue() {
   const list  = $('#queue-list');
   const panel = $('#queue-panel');
@@ -838,9 +816,7 @@ function toggleQueue() {
   }
 }
 
-/* ══════════════════════════════
-   NOW PLAYING OVERLAY
-   ══════════════════════════════ */
+/* NOW PLAYING OVERLAY */
 let npOpen = false;
 
 function openNowPlaying() {
@@ -871,9 +847,7 @@ function toggleNowPlaying() {
   npOpen ? closeNowPlaying() : openNowPlaying();
 }
 
-/* ══════════════════════════════
-   PLAYLIST MODAL & LYRICS
-   ══════════════════════════════ */
+/* PLAYLIST MODAL & LYRICS */
 function openPlaylistModal(song) {
   currentPlaylistSong = song;
   const modal = $('#playlist-modal');
@@ -946,9 +920,7 @@ function toggleLyricsPanel() {
   }
 }
 
-/* ══════════════════════════════
-   SHUFFLE / REPEAT UI
-   ══════════════════════════════ */
+/* SHUFFLE / REPEAT UI */
 function syncShuffleUI() {
   const btn = $('#btn-shuffle');
   const npBtn = $('#np-shuffle');
@@ -970,9 +942,7 @@ function syncRepeatUI() {
   });
 }
 
-/* ══════════════════════════════
-   GLOBAL BOOT (URL PARSING)
-   ══════════════════════════════ */
+/* GLOBAL BOOT (URL PARSING) */
 export async function processShareLink() {
   const params = new URLSearchParams(window.location.search);
   const songId = params.get('songId');
@@ -1017,9 +987,7 @@ export async function processShareLink() {
   }
 }
 
-/* ══════════════════════════════
-   DETAIL VIEWS (ARTIST & ALBUM)
-   ══════════════════════════════ */
+/* DETAIL VIEWS (ARTIST & ALBUM) */
 let activeDetailSongs = [];
 
 // Back button handler
@@ -1075,9 +1043,7 @@ export async function openArtist(id) {
   else showToast('Failed to load artist.', 'ph ph-warning-circle');
 }
 
-/* ══════════════════════════════
-   INIT
-   ══════════════════════════════ */
+/* INIT */
 export function initUI() {
   // Remove cursor elements from DOM (no custom cursor)
   $('#cursor-dot')?.remove();
@@ -1365,9 +1331,7 @@ function adjustVol(delta) {
   Player.setVolume(v); Storage.saveVolume(v); updateVolIcon(v);
 }
 
-/* ══════════════════════════════
-   SETTINGS PANEL
-   ══════════════════════════════ */
+/* SETTINGS PANEL */
 function initSettings() {
   const panel = $('#settings-panel');
   if (!panel) return;
@@ -1479,9 +1443,7 @@ function applyTheme(theme) {
   }
 }
 
-/* ══════════════════════════════
-   LIBRARY DROPDOWN
-   ══════════════════════════════ */
+/* LIBRARY DROPDOWN */
 function initLibraryDropdown() {
   const btn = $('#btn-library');
   const dropdown = $('#library-dropdown');
@@ -1503,9 +1465,7 @@ function initLibraryDropdown() {
   $('#btn-history')?.addEventListener('click', () => { dropdown.classList.add('hidden'); showHistory(); });
 }
 
-/* ══════════════════════════════
-   RECENT SEARCHES
-   ══════════════════════════════ */
+/* RECENT SEARCHES */
 function initRecentSearches() {
   const input = $('#search-input');
   const container = $('#recent-searches');
@@ -1555,9 +1515,7 @@ export function saveRecentSearch(query) {
   Storage.addRecentSearch(query);
 }
 
-/* ══════════════════════════════
-   SLEEP TIMER
-   ══════════════════════════════ */
+/* SLEEP TIMER */
 function initSleepTimer() {
   $$('.sleep-chip').forEach(chip => {
     chip.addEventListener('click', () => {
@@ -1596,9 +1554,7 @@ function syncSleepUI() {
   }
 }
 
-/* ══════════════════════════════
-   VISUALIZER (NP overlay)
-   ══════════════════════════════ */
+/* VISUALIZER (NP overlay) */
 function startNPVisualizer() {
   const canvas = $('#np-visualizer');
   if (canvas && Storage.getVisualizerEnabled()) {
@@ -1610,9 +1566,7 @@ function stopNPVisualizer() {
   Vis.stopVisualizer();
 }
 
-/* ══════════════════════════════
-   CUSTOM SELECT HELPERS
-   ══════════════════════════════ */
+/* CUSTOM SELECT HELPERS */
 const _customSelectCallbacks = {};
 
 function initCustomSelects() {

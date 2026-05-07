@@ -1,15 +1,10 @@
-/**
- * ═══════════════════════════════════════════
- *  main.js — Entry Point (v3 — Premium)
- * ═══════════════════════════════════════════
- */
+// main.js — app entry point
 
 import * as API     from './api.js';
 import * as Player  from './player.js';
 import * as Storage from './storage.js';
 import * as UI      from './ui.js';
 
-/* ── Categories ── */
 const CATEGORIES = [
   { rowId: 'row-anime',     query: 'anime opening song japanese',   label: 'Anime OSTs' },
   { rowId: 'row-bollywood', query: 'bollywood latest hits 2024',    label: 'Bollywood Hits' },
@@ -19,7 +14,6 @@ const CATEGORIES = [
   { rowId: 'row-golden',    query: 'old hindi golden songs classic', label: 'Golden Era Classics' },
 ];
 
-/* ── Boot ── */
 async function boot() {
   console.log('%c♫ Clash Musics', 'color:#8b6cff;font-size:20px;font-weight:900;');
 
@@ -27,17 +21,14 @@ async function boot() {
   Player.restoreState();
   setGreeting();
 
-  // Init API (multi-failover probe)
   const endpoint = await API.init();
   if (!endpoint) {
     UI.showToast('Cannot connect. Check your internet.', 'ph ph-wifi-x');
     return;
   }
 
-  // Intercept shared URLs
   await UI.processShareLink();
 
-  // Load everything
   await Promise.all([
     loadCategories(),
     loadRecommendations(),
@@ -46,7 +37,6 @@ async function boot() {
   wireSearch();
 }
 
-/* ── Greeting ── */
 function setGreeting() {
   const el = document.getElementById('hero-greeting');
   if (!el) return;
@@ -58,7 +48,6 @@ function setGreeting() {
   else             el.textContent = 'Good night 🌙';
 }
 
-/* ── Categories ── */
 async function loadCategories() {
   await Promise.allSettled(
     CATEGORIES.map(async (cat) => {
@@ -74,7 +63,7 @@ async function loadCategories() {
   );
 }
 
-/* ── Your Taste — Recommendation Engine ── */
+// recommendation engine — builds queries from listening history
 async function loadRecommendations() {
   const section = document.getElementById('section-taste');
   const row     = document.getElementById('row-taste');
@@ -88,7 +77,6 @@ async function loadRecommendations() {
 
   section.classList.remove('hidden');
 
-  // Update tag
   if (summary && tag) {
     if (summary.topMood && summary.topArtists.length > 0) {
       tag.textContent = `${summary.topMood} × ${summary.topArtists[0]}`;
@@ -117,7 +105,7 @@ async function loadRecommendations() {
       }
     }
 
-    // Fisher-Yates shuffle
+    // fisher-yates shuffle
     for (let i = recs.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [recs[i], recs[j]] = [recs[j], recs[i]];
@@ -135,7 +123,7 @@ async function loadRecommendations() {
   }
 }
 
-/* ── Search ── */
+// search with debounce
 let searchTimer = null;
 
 function wireSearch() {
@@ -148,7 +136,6 @@ function wireSearch() {
 
     searchTimer = setTimeout(async () => {
       try {
-        // Now using global searchAll instead of just songs
         const results = await API.searchAll(q, 15);
         UI.showSearchResults(results, q);
         UI.saveRecentSearch(q);
@@ -172,7 +159,7 @@ function wireSearch() {
       const q = input.value.trim();
       if (!q) return;
       
-      input.blur(); // close mobile keyboard
+      input.blur();
       UI.showToast(`Searching for "${q}"...`, 'ph ph-spinner spin-anim');
       API.searchAll(q, 15)
         .then(results => { UI.showSearchResults(results, q); UI.saveRecentSearch(q); })

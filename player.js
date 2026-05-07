@@ -1,8 +1,6 @@
 /**
- * ═══════════════════════════════════════════
  *  player.js — Audio Engine (v4 — Premium+)
  *  Shuffle, Repeat, Queue, Crossfade, Gapless
- * ═══════════════════════════════════════════
  */
 
 import * as Storage from './storage.js';
@@ -17,10 +15,10 @@ const audio2 = new Audio();
 audio2.crossOrigin = 'anonymous';
 audio2.preload = 'auto';
 
-let playlist   = [];
+let playlist = [];
 let currentIdx = -1;
 let currentSong = null;
-let shuffleOn  = false;
+let shuffleOn = false;
 let repeatMode = 0; // 0=off, 1=all, 2=one
 
 /* Crossfade state */
@@ -64,22 +62,22 @@ export function playSong(song, list = [], idx = 0) {
     emit('error', { message: 'No playable URL for this song.' });
     return;
   }
-  
+
   // Init visualizer on first play
   tryInitVisualizer();
   Vis.resumeContext();
-  
+
   const crossfadeEnabled = Storage.getCrossfadeEnabled();
   const crossfadeDur = Storage.getCrossfadeDuration();
-  
+
   // If crossfade is on and we have a currently playing song, do crossfade
   if (crossfadeEnabled && crossfadeDur > 0 && currentSong && !activeAudio.paused) {
     doCrossfade(song, list, idx, crossfadeDur);
     return;
   }
-  
+
   // Normal play
-  playlist   = list.length ? list : [song];
+  playlist = list.length ? list : [song];
   currentIdx = idx;
   currentSong = song;
 
@@ -110,38 +108,38 @@ export function playSong(song, list = [], idx = 0) {
 function doCrossfade(song, list, idx, duration) {
   if (crossfading) return; // prevent double crossfade
   crossfading = true;
-  
+
   const outgoing = activeAudio;
   const incoming = (outgoing === audio) ? audio2 : audio;
-  
+
   // Set up incoming
   incoming.src = song.streamUrl;
   incoming.volume = 0;
   incoming.currentTime = 0;
-  
+
   playlist = list.length ? list : [song];
   currentIdx = idx;
   currentSong = song;
-  
+
   Storage.saveLastPlayed(song);
   Storage.saveQueue(playlist, currentIdx);
   Storage.addToHistory(song);
   emit('trackchange', { song });
-  
+
   const startVol = outgoing.volume;
   const steps = 30;
   const stepTime = (duration * 1000) / steps;
   let step = 0;
-  
-  incoming.play().catch(() => {});
-  
+
+  incoming.play().catch(() => { });
+
   if (crossfadeInterval) clearInterval(crossfadeInterval);
   crossfadeInterval = setInterval(() => {
     step++;
     const progress = step / steps;
     outgoing.volume = Math.max(0, startVol * (1 - progress));
     incoming.volume = Math.min(startVol, startVol * progress);
-    
+
     if (step >= steps) {
       clearInterval(crossfadeInterval);
       crossfadeInterval = null;
@@ -153,7 +151,7 @@ function doCrossfade(song, list, idx, duration) {
       emit('play');
     }
   }, stepTime);
-  
+
   setMediaSession(song);
   preloadNext(list, idx);
 }
@@ -172,11 +170,11 @@ function preloadNext(list, idx) {
 export function toggle() {
   if (!currentSong) return;
   Vis.resumeContext();
-  if (activeAudio.paused) { 
-    activeAudio.play().then(() => emit('play')).catch(() => emit('pause')); 
-  } else { 
-    activeAudio.pause(); 
-    emit('pause'); 
+  if (activeAudio.paused) {
+    activeAudio.play().then(() => emit('play')).catch(() => emit('pause'));
+  } else {
+    activeAudio.pause();
+    emit('pause');
   }
 }
 
@@ -220,12 +218,12 @@ export function setVolume(vol) {
   Storage.saveVolume(v);
 }
 
-export function getVolume()     { return activeAudio.volume; }
-export function getCurrentSong(){ return currentSong; }
-export function isPlaying()     { return !activeAudio.paused; }
-export function getDuration()   { return activeAudio.duration || 0; }
-export function getCurrentTime(){ return activeAudio.currentTime || 0; }
-export function getPlaylist()   { return playlist; }
+export function getVolume() { return activeAudio.volume; }
+export function getCurrentSong() { return currentSong; }
+export function isPlaying() { return !activeAudio.paused; }
+export function getDuration() { return activeAudio.duration || 0; }
+export function getCurrentTime() { return activeAudio.currentTime || 0; }
+export function getPlaylist() { return playlist; }
 export function getCurrentIdx() { return currentIdx; }
 export function getAudioElement() { return activeAudio; }
 
@@ -249,10 +247,10 @@ export function getRepeatMode() { return repeatMode; }
 export function reorderQueue(fromIdx, toIdx) {
   if (fromIdx < 0 || fromIdx >= playlist.length) return;
   if (toIdx < 0 || toIdx >= playlist.length) return;
-  
+
   const [moved] = playlist.splice(fromIdx, 1);
   playlist.splice(toIdx, 0, moved);
-  
+
   // Adjust currentIdx
   if (currentIdx === fromIdx) {
     currentIdx = toIdx;
@@ -261,7 +259,7 @@ export function reorderQueue(fromIdx, toIdx) {
   } else if (fromIdx > currentIdx && toIdx <= currentIdx) {
     currentIdx++;
   }
-  
+
   Storage.saveQueue(playlist, currentIdx);
   emit('queuechange');
 }
@@ -270,16 +268,16 @@ export function reorderQueue(fromIdx, toIdx) {
 export function setSleepTimer(minutes) {
   clearSleepTimerFn();
   if (!minutes || minutes <= 0) return;
-  
+
   sleepEndTime = Date.now() + minutes * 60 * 1000;
   Storage.saveSleepTimer(sleepEndTime);
-  
+
   sleepTimerId = setTimeout(() => {
     pause();
     emit('sleeptimer', { message: 'Sleep timer ended' });
     clearSleepTimerFn();
   }, minutes * 60 * 1000);
-  
+
   emit('sleeptimerstart', { minutes, endTime: sleepEndTime });
 }
 
@@ -301,12 +299,12 @@ export function restoreState() {
   const savedQueue = Storage.getQueue();
   const savedIdx = Storage.getQueueIdx();
 
-  if (last) { 
-    currentSong = last; 
+  if (last) {
+    currentSong = last;
     playlist = savedQueue.length ? savedQueue : [last];
     currentIdx = savedQueue.length ? savedIdx : 0;
     activeAudio.src = last.streamUrl;
-    emit('trackchange', { song: last }); 
+    emit('trackchange', { song: last });
   }
 }
 
@@ -329,7 +327,7 @@ function bindAudioEvents(el) {
   el.addEventListener('timeupdate', () => {
     if (el !== activeAudio) return;
     if (!isFinite(el.duration)) return;
-    
+
     // Check for crossfade trigger
     const crossfadeEnabled = Storage.getCrossfadeEnabled();
     const crossfadeDur = Storage.getCrossfadeDuration();
@@ -347,11 +345,11 @@ function bindAudioEvents(el) {
         }
       }
     }
-    
+
     emit('timeupdate', {
-      current:  el.currentTime,
+      current: el.currentTime,
       duration: el.duration,
-      percent:  (el.currentTime / el.duration) * 100,
+      percent: (el.currentTime / el.duration) * 100,
     });
   });
 
@@ -360,7 +358,7 @@ function bindAudioEvents(el) {
     emit('ended');
     if (repeatMode === 2) {
       el.currentTime = 0;
-      el.play().catch(() => {});
+      el.play().catch(() => { });
     } else if (repeatMode === 1 || currentIdx < playlist.length - 1) {
       next();
     } else {
@@ -385,7 +383,7 @@ bindAudioEvents(audio);
 bindAudioEvents(audio2);
 
 if ('mediaSession' in navigator) {
-  navigator.mediaSession.setActionHandler('play', () => { if (activeAudio.paused) { activeAudio.play().catch(()=>{}); emit('play'); } });
+  navigator.mediaSession.setActionHandler('play', () => { if (activeAudio.paused) { activeAudio.play().catch(() => { }); emit('play'); } });
   navigator.mediaSession.setActionHandler('pause', () => { activeAudio.pause(); emit('pause'); });
   navigator.mediaSession.setActionHandler('previoustrack', prev);
   navigator.mediaSession.setActionHandler('nexttrack', next);

@@ -1,27 +1,25 @@
 /**
- * ═══════════════════════════════════════════
  *  storage.js — Persistence & Taste Engine
- * ═══════════════════════════════════════════
  */
 
 const KEYS = {
-  VOLUME:    'clash_volume',
-  LAST:      'clash_lastPlayed',
-  HISTORY:   'clash_history',
-  LIKED:     'clash_liked',
+  VOLUME: 'clash_volume',
+  LAST: 'clash_lastPlayed',
+  HISTORY: 'clash_history',
+  LIKED: 'clash_liked',
   PLAYLISTS: 'clash_playlists',
-  QUEUE:     'clash_queue',
+  QUEUE: 'clash_queue',
   QUEUE_IDX: 'clash_queue_idx',
-  EQ_PRESET:      'clash_eq_preset',
-  EQ_CUSTOM:      'clash_eq_custom',
-  VIS_ENABLED:    'clash_visualizer_enabled',
-  VIS_MODE:       'clash_visualizer_mode',
-  CROSSFADE_ON:   'clash_crossfade_enabled',
-  CROSSFADE_DUR:  'clash_crossfade_duration',
-  GAPLESS:        'clash_gapless',
-  THEME:          'clash_theme',
-  RECENT_SEARCHES:'clash_recent_searches',
-  SLEEP_TIMER:    'clash_sleep_timer',
+  EQ_PRESET: 'clash_eq_preset',
+  EQ_CUSTOM: 'clash_eq_custom',
+  VIS_ENABLED: 'clash_visualizer_enabled',
+  VIS_MODE: 'clash_visualizer_mode',
+  CROSSFADE_ON: 'clash_crossfade_enabled',
+  CROSSFADE_DUR: 'clash_crossfade_duration',
+  GAPLESS: 'clash_gapless',
+  THEME: 'clash_theme',
+  RECENT_SEARCHES: 'clash_recent_searches',
+  SLEEP_TIMER: 'clash_sleep_timer',
 };
 
 function readJSON(key, fallback) {
@@ -30,7 +28,7 @@ function readJSON(key, fallback) {
 }
 
 function writeJSON(key, value) {
-  try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch { }
 }
 
 /* ── Volume ── */
@@ -72,12 +70,9 @@ export function toggleLike(song) {
   liked.unshift(song); writeJSON(KEYS.LIKED, liked); return true;
 }
 
-/* ══════════════════════════════════════════
+/* 
    TASTE ENGINE — Smarter Recommendations
-   ══════════════════════════════════════════
-
    Strategy:
-   ─────────
    1. Score artists by frequency × recency (recent plays = higher weight)
    2. Extract mood keywords from song titles (love, sad, party, etc.)
    3. Build diverse queries mixing:
@@ -91,10 +86,10 @@ export function toggleLike(song) {
 
 const MOOD_KEYWORDS = {
   romantic: ['love', 'pyar', 'ishq', 'dil', 'heart', 'romance', 'baby', 'darling', 'mohabbat', 'tumse'],
-  sad:      ['sad', 'dard', 'broken', 'cry', 'miss', 'alone', 'judai', 'bewafa', 'tanha', 'pain'],
-  party:    ['party', 'dance', 'dj', 'beat', 'club', 'bass', 'vibe', 'fire', 'lit', 'moves'],
-  chill:    ['chill', 'lofi', 'relax', 'peace', 'calm', 'sleep', 'rain', 'drive', 'night'],
-  hype:     ['rap', 'hip hop', 'hustle', 'king', 'boss', 'squad', 'gang', 'flex', 'grind'],
+  sad: ['sad', 'dard', 'broken', 'cry', 'miss', 'alone', 'judai', 'bewafa', 'tanha', 'pain'],
+  party: ['party', 'dance', 'dj', 'beat', 'club', 'bass', 'vibe', 'fire', 'lit', 'moves'],
+  chill: ['chill', 'lofi', 'relax', 'peace', 'calm', 'sleep', 'rain', 'drive', 'night'],
+  hype: ['rap', 'hip hop', 'hustle', 'king', 'boss', 'squad', 'gang', 'flex', 'grind'],
 };
 
 function detectMoods(songs) {
@@ -140,7 +135,7 @@ function scoreArtists(songs) {
 
 export function getTasteQueries() {
   const history = getHistory();
-  const liked   = getLiked();
+  const liked = getLiked();
 
   // Merge with liked songs weighted 2x (user explicitly chose them)
   const allSongs = [];
@@ -158,7 +153,7 @@ export function getTasteQueries() {
   allSongs.forEach(s => {
     if (s.language) langCount[s.language] = (langCount[s.language] || 0) + 1;
   });
-  const topLang = Object.entries(langCount).sort((a,b) => b[1]-a[1])[0]?.[0] || '';
+  const topLang = Object.entries(langCount).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
 
   const queries = [];
 
@@ -201,7 +196,7 @@ export function getTasteQueries() {
 
 export function getTasteSummary() {
   const history = getHistory();
-  const liked   = getLiked();
+  const liked = getLiked();
   if (history.length === 0 && liked.length === 0) return null;
 
   const all = [...liked, ...liked, ...history]; // liked weighted 2x
@@ -217,9 +212,7 @@ export function getTasteSummary() {
   };
 }
 
-/* ══════════════════════════════════════════
-   CUSTOM PLAYLISTS 
-   ══════════════════════════════════════════ */
+/* CUSTOM PLAYLISTS */
 
 export function getPlaylists() {
   return readJSON(KEYS.PLAYLISTS, []);
@@ -243,12 +236,12 @@ export function addToPlaylist(playlistId, song) {
   const pList = getPlaylists();
   const playlist = pList.find(p => p.id === playlistId);
   if (!playlist) return false;
-  
+
   if (playlist.songs.length >= 50) return 'full';
-  
+
   // Prevent strict duplicates in the same playlist
   if (playlist.songs.some(s => s.id === song.id)) return 'duplicate';
-  
+
   playlist.songs.push(song);
   writeJSON(KEYS.PLAYLISTS, pList);
   return 'added';
@@ -259,10 +252,10 @@ export function removeFromPlaylist(playlistId, songId) {
   const pList = getPlaylists();
   const playlist = pList.find(p => p.id === playlistId);
   if (!playlist) return false;
-  
+
   const initialLength = playlist.songs.length;
   playlist.songs = playlist.songs.filter(s => s.id !== songId);
-  
+
   if (playlist.songs.length !== initialLength) {
     writeJSON(KEYS.PLAYLISTS, pList);
     return true;
@@ -283,38 +276,36 @@ export function importPlaylist(name, songsArray) {
   return newPlaylist;
 }
 
-/* ══════════════════════════════════════════
-   SETTINGS — Equalizer, Visualizer, etc.
-   ══════════════════════════════════════════ */
+/* SETTINGS — Equalizer, Visualizer, etc. */
 
 /* ── Equalizer ── */
-export function getEQPreset()          { return localStorage.getItem(KEYS.EQ_PRESET) || 'Flat'; }
-export function saveEQPreset(name)     { localStorage.setItem(KEYS.EQ_PRESET, name); }
-export function getEQCustom()          { return readJSON(KEYS.EQ_CUSTOM, [0,0,0,0,0]); }
-export function saveEQCustom(gains)    { writeJSON(KEYS.EQ_CUSTOM, gains); }
+export function getEQPreset() { return localStorage.getItem(KEYS.EQ_PRESET) || 'Flat'; }
+export function saveEQPreset(name) { localStorage.setItem(KEYS.EQ_PRESET, name); }
+export function getEQCustom() { return readJSON(KEYS.EQ_CUSTOM, [0, 0, 0, 0, 0]); }
+export function saveEQCustom(gains) { writeJSON(KEYS.EQ_CUSTOM, gains); }
 
 /* ── Visualizer ── */
 export function getVisualizerEnabled() { return readJSON(KEYS.VIS_ENABLED, true); }
-export function saveVisualizerEnabled(b){ writeJSON(KEYS.VIS_ENABLED, !!b); }
-export function getVisualizerMode()    { return localStorage.getItem(KEYS.VIS_MODE) || 'bars'; }
-export function saveVisualizerMode(m)  { localStorage.setItem(KEYS.VIS_MODE, m); }
+export function saveVisualizerEnabled(b) { writeJSON(KEYS.VIS_ENABLED, !!b); }
+export function getVisualizerMode() { return localStorage.getItem(KEYS.VIS_MODE) || 'bars'; }
+export function saveVisualizerMode(m) { localStorage.setItem(KEYS.VIS_MODE, m); }
 
 /* ── Crossfade ── */
-export function getCrossfadeEnabled()  { return readJSON(KEYS.CROSSFADE_ON, false); }
-export function saveCrossfadeEnabled(b){ writeJSON(KEYS.CROSSFADE_ON, !!b); }
+export function getCrossfadeEnabled() { return readJSON(KEYS.CROSSFADE_ON, false); }
+export function saveCrossfadeEnabled(b) { writeJSON(KEYS.CROSSFADE_ON, !!b); }
 export function getCrossfadeDuration() { const v = parseFloat(localStorage.getItem(KEYS.CROSSFADE_DUR)); return isNaN(v) ? 5 : v; }
-export function saveCrossfadeDuration(s){ localStorage.setItem(KEYS.CROSSFADE_DUR, String(s)); }
+export function saveCrossfadeDuration(s) { localStorage.setItem(KEYS.CROSSFADE_DUR, String(s)); }
 
 /* ── Gapless ── */
-export function getGapless()           { return readJSON(KEYS.GAPLESS, false); }
-export function saveGapless(b)         { writeJSON(KEYS.GAPLESS, !!b); }
+export function getGapless() { return readJSON(KEYS.GAPLESS, false); }
+export function saveGapless(b) { writeJSON(KEYS.GAPLESS, !!b); }
 
 /* ── Theme ── */
-export function getTheme()             { return localStorage.getItem(KEYS.THEME) || 'dark'; }
-export function saveTheme(t)           { localStorage.setItem(KEYS.THEME, t); }
+export function getTheme() { return localStorage.getItem(KEYS.THEME) || 'dark'; }
+export function saveTheme(t) { localStorage.setItem(KEYS.THEME, t); }
 
 /* ── Recent Searches ── */
-export function getRecentSearches()    { return readJSON(KEYS.RECENT_SEARCHES, []); }
+export function getRecentSearches() { return readJSON(KEYS.RECENT_SEARCHES, []); }
 export function addRecentSearch(q) {
   if (!q?.trim()) return;
   let list = getRecentSearches().filter(s => s !== q.trim());
@@ -322,9 +313,9 @@ export function addRecentSearch(q) {
   if (list.length > 8) list = list.slice(0, 8);
   writeJSON(KEYS.RECENT_SEARCHES, list);
 }
-export function clearRecentSearches()  { writeJSON(KEYS.RECENT_SEARCHES, []); }
+export function clearRecentSearches() { writeJSON(KEYS.RECENT_SEARCHES, []); }
 
 /* ── Sleep Timer ── */
-export function getSleepTimer()        { return readJSON(KEYS.SLEEP_TIMER, null); }
-export function saveSleepTimer(ts)     { writeJSON(KEYS.SLEEP_TIMER, ts); }
-export function clearSleepTimer()      { localStorage.removeItem(KEYS.SLEEP_TIMER); }
+export function getSleepTimer() { return readJSON(KEYS.SLEEP_TIMER, null); }
+export function saveSleepTimer(ts) { writeJSON(KEYS.SLEEP_TIMER, ts); }
+export function clearSleepTimer() { localStorage.removeItem(KEYS.SLEEP_TIMER); }

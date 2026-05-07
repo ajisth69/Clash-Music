@@ -1,15 +1,6 @@
-/**
- * ═══════════════════════════════════════════
- *  api.js — Multi-API JioSaavn Integration
- * ═══════════════════════════════════════════
- *
- *  Integrates MULTIPLE JioSaavn API instances.
- *  Auto-detects which API is alive and uses it.
- *  Falls back silently to the next if one is down.
- */
+// api.js — JioSaavn API with multi-endpoint failover
 
-/* ─────────── API Pool ─────────── */
-
+// pool of mirrors — if one goes down, we try the next
 const API_POOL = [
   'https://saavn.dev/api',
   'https://jiosaavn-api-two-beta.vercel.app/api',
@@ -19,19 +10,15 @@ const API_POOL = [
   'https://jiosaavn-api-ts.vercel.app/api',
 ];
 
-let activeAPI = null;       // The currently known-good API
+let activeAPI = null;
 let apiCheckDone = false;
 
-/**
- * Probe each API in the pool and find the first that responds.
- * Called once at startup, cached afterward.
- */
+// probe each endpoint at startup, pick the first one that responds
 async function findActiveAPI() {
   if (activeAPI) return activeAPI;
 
-  console.log('[API] Probing', API_POOL.length, 'endpoints…');
+  console.log('[API] Probing', API_POOL.length, 'endpoints...');
 
-  // Race all endpoints with a lightweight query
   const probes = API_POOL.map(async (base) => {
     try {
       const controller = new AbortController();
@@ -43,25 +30,24 @@ async function findActiveAPI() {
       if (res.ok) {
         const json = await res.json();
         if (json?.success || json?.data) {
-          return base; // This one works!
+          return base;
         }
       }
-    } catch { /* ignore */ }
+    } catch { /* skip */ }
     return null;
   });
 
-  // Use Promise.allSettled and pick the first success
   const results = await Promise.allSettled(probes);
   for (const r of results) {
     if (r.status === 'fulfilled' && r.value) {
       activeAPI = r.value;
-      console.log(`[API] ✓ Active endpoint: ${activeAPI}`);
+      console.log('[API] Using:', activeAPI);
       apiCheckDone = true;
       return activeAPI;
     }
   }
 
-  // If none responded in parallel, try sequentially as last resort
+  // parallel failed, try one by one as last resort
   for (const base of API_POOL) {
     try {
       const controller = new AbortController();
@@ -72,38 +58,34 @@ async function findActiveAPI() {
       clearTimeout(timer);
       if (res.ok) {
         activeAPI = base;
-        console.log(`[API] ✓ Active endpoint (sequential): ${activeAPI}`);
+        console.log('[API] Using (sequential):', activeAPI);
         apiCheckDone = true;
         return activeAPI;
       }
     } catch { /* next */ }
   }
 
-  console.error('[API] ✗ No working API found!');
+  console.error('[API] No working endpoint found');
   apiCheckDone = true;
   return null;
 }
 
-/**
- * Smart fetch: tries the active API, on failure rotates to next.
- */
+// fetch with automatic failover — tries active endpoint first, rotates on failure
 async function apiFetch(path, timeoutMs = 10000) {
-  // Ensure we have an active API
   if (!activeAPI) await findActiveAPI();
   if (!activeAPI) return null;
 
-  // Try current active
   let result = await safeFetch(`${activeAPI}${path}`, timeoutMs);
   if (result) return result;
 
-  // Active failed — rotate through pool
-  console.warn(`[API] ${activeAPI} failed, trying others…`);
+  // active failed, try others
+  console.warn(`[API] ${activeAPI} failed, rotating...`);
   for (const base of API_POOL) {
     if (base === activeAPI) continue;
     result = await safeFetch(`${base}${path}`, timeoutMs);
     if (result) {
       activeAPI = base;
-      console.log(`[API] Switched to: ${activeAPI}`);
+      console.log('[API] Switched to:', activeAPI);
       return result;
     }
   }
@@ -111,9 +93,6 @@ async function apiFetch(path, timeoutMs = 10000) {
   return null;
 }
 
-/**
- * Generic fetch wrapper with error handling & timeout.
- */
 async function safeFetch(url, timeoutMs = 10000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -129,9 +108,7 @@ async function safeFetch(url, timeoutMs = 10000) {
   }
 }
 
-/**
- * Normalise a raw song object from the API into our app's shape.
- */
+// normalize the raw API response into a consistent shape
 function normaliseSong(raw) {
   if (!raw) return null;
 
@@ -195,25 +172,16 @@ function normaliseSong(raw) {
   };
 }
 
-/* ─────────── Public API Methods ─────────── */
+// --- public API ---
 
-/**
- * Initialise the API — call at startup.
- */
 export async function init() {
   return findActiveAPI();
 }
 
-/**
- * Get the active API base URL (for display/debugging).
- */
 export function getActiveEndpoint() {
   return activeAPI;
 }
 
-/**
- * Search all categories by query string.
- */
 export async function searchAll(query, limit = 10) {
   if (!query?.trim()) return null;
   const encoded = encodeURIComponent(query);
@@ -230,9 +198,6 @@ export async function searchAll(query, limit = 10) {
   };
 }
 
-/**
- * Search songs by query string.
- */
 export async function searchSongs(query, limit = 20, page = 1) {
   if (!query?.trim()) return [];
   const data = await apiFetch(`/search/songs?query=${encodeURIComponent(query)}&limit=${limit}&page=${page}`);
@@ -240,16 +205,10 @@ export async function searchSongs(query, limit = 20, page = 1) {
   return data.data.results.map(normaliseSong).filter(Boolean);
 }
 
-/**
- * Fetch songs for a pre-defined category / playlist query.
- */
 export async function fetchCategorySongs(query, limit = 15) {
   return searchSongs(query, limit);
 }
 
-/**
- * Get song details by ID.
- */
 export async function getSongById(id) {
   if (!id) return null;
   const data = await apiFetch(`/songs/${id}`);
@@ -257,14 +216,11 @@ export async function getSongById(id) {
   return normaliseSong(data.data[0]);
 }
 
-/**
- * Fetch lyrics by song ID or metadata using LRCLIB as primary source.
- */
+// tries LRCLIB first (better for mashups/edits since it checks duration),
+// falls back to jiosaavn lyrics endpoint
 export async function getLyrics(songId, trackName = '', artistName = '', albumName = '', duration = 0) {
   if (trackName && artistName) {
     try {
-      // LRCLIB /get enforces strict duration matching, meaning Mashups/Slowed edits
-      // won't accidentally fetch the original song's lyrics.
       let url = `https://lrclib.net/api/get?track_name=${encodeURIComponent(trackName)}&artist_name=${encodeURIComponent(artistName)}`;
       if (albumName) url += `&album_name=${encodeURIComponent(albumName)}`;
       if (duration) url += `&duration=${Math.round(duration)}`;
@@ -276,19 +232,15 @@ export async function getLyrics(songId, trackName = '', artistName = '', albumNa
           return data.syncedLyrics || data.plainLyrics || null;
         }
       }
-    } catch { /* ignore fallback to jiosaavn */ }
+    } catch { /* fall through to jiosaavn */ }
   }
 
   if (!songId) return null;
   const data = await apiFetch(`/songs/${songId}/lyrics`);
   if (!data?.data) return null;
-  // Handle varying JioSaavn proxy schema
   return data.data.lyrics || data.data.snippet || null;
 }
 
-/**
- * Fetch multiple songs by ID array (chunked 10 at a time safely).
- */
 export async function getSongsByIds(ids) {
   if (!Array.isArray(ids) || !ids.length) return [];
   const songs = [];
@@ -300,9 +252,6 @@ export async function getSongsByIds(ids) {
   return songs;
 }
 
-/**
- * Fetch album details by ID.
- */
 export async function getAlbumById(id) {
   if (!id) return null;
   const res = await apiFetch(`/albums?id=${id}`);
@@ -318,12 +267,9 @@ export async function getAlbumById(id) {
   };
 }
 
-/**
- * Fetch artist details by ID.
- */
 export async function getArtistById(id) {
   if (!id) return null;
-  // Use a high songCount to ensure we get a large discography sample instead of default 5-10
+  // high songCount to get a decent discography instead of the default 5-10
   const res = await apiFetch(`/artists?id=${id}&songCount=100&albumCount=50`);
   if (!res?.data) return null;
   const artistData = res.data;
