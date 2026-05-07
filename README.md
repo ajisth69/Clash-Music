@@ -78,4 +78,4 @@ MIT — do whatever you want with it
 
 ---
 
-made by [ajisth](https://github.com/ajisth)
+made by [ajisth](https://github.com/ajisth69)
