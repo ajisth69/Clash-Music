@@ -1,8 +1,8 @@
-// api.js — JioSaavn API with multi-endpoint failover
+// api.js — JioSaavn API with multi-endpoint failover + CORS proxy for Brave
 
 // pool of mirrors — if one goes down, we try the next
+// saavn.dev removed (DNS dead), order by reliability
 const API_POOL = [
-  'https://saavn.dev/api',
   'https://jiosaavn-api-two-beta.vercel.app/api',
   'https://jiosaavn-api-privatecvc2.vercel.app/api',
   'https://jio-savaan-private.vercel.app/api',
@@ -10,8 +10,15 @@ const API_POOL = [
   'https://jiosaavn-api-ts.vercel.app/api',
 ];
 
+// CORS proxies — used when direct fetch fails (Brave shields, strict CORS)
+const CORS_PROXIES = [
+  (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+];
+
 let activeAPI = null;
 let apiCheckDone = false;
+let needsProxy = false; // true if direct fetch failed during probing (Brave etc)
 
 // probe each endpoint at startup, pick the first one that responds
 async function findActiveAPI() {
@@ -19,6 +26,7 @@ async function findActiveAPI() {
 
   console.log('[API] Probing', API_POOL.length, 'endpoints...');
 
+  // first try direct (works in Chrome/Edge/Firefox)
   const probes = API_POOL.map(async (base) => {
     try {
       const controller = new AbortController();
@@ -41,31 +49,41 @@ async function findActiveAPI() {
   for (const r of results) {
     if (r.status === 'fulfilled' && r.value) {
       activeAPI = r.value;
-      console.log('[API] Using:', activeAPI);
+      needsProxy = false;
+      console.log('[API] Using (direct):', activeAPI);
       apiCheckDone = true;
       return activeAPI;
     }
   }
 
-  // parallel failed, try one by one as last resort
+  // direct failed everywhere — likely CORS blocked (Brave), try via proxy
+  console.warn('[API] Direct fetch failed on all endpoints, trying CORS proxy...');
   for (const base of API_POOL) {
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 6000);
-      const res = await fetch(`${base}/search/songs?query=arijit&limit=1`, {
-        signal: controller.signal,
-      });
-      clearTimeout(timer);
-      if (res.ok) {
-        activeAPI = base;
-        console.log('[API] Using (sequential):', activeAPI);
-        apiCheckDone = true;
-        return activeAPI;
-      }
-    } catch { /* next */ }
+    for (const proxyFn of CORS_PROXIES) {
+      try {
+        const testUrl = `${base}/search/songs?query=test&limit=1`;
+        const proxied = proxyFn(testUrl);
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch(proxied, { signal: controller.signal });
+        clearTimeout(timer);
+        if (res.ok) {
+          const json = await res.json();
+          if (json?.success || json?.data) {
+            activeAPI = base;
+            needsProxy = true;
+            // remember which proxy works
+            CORS_PROXIES._activeProxy = proxyFn;
+            console.log('[API] Using (via CORS proxy):', activeAPI);
+            apiCheckDone = true;
+            return activeAPI;
+          }
+        }
+      } catch { /* next proxy/endpoint */ }
+    }
   }
 
-  console.error('[API] No working endpoint found');
+  console.error('[API] No working endpoint found (direct or proxied)');
   apiCheckDone = true;
   return null;
 }
@@ -93,12 +111,20 @@ async function apiFetch(path, timeoutMs = 10000) {
   return null;
 }
 
+// wraps URL through CORS proxy if needed (Brave etc)
+function buildUrl(url) {
+  if (!needsProxy) return url;
+  const proxyFn = CORS_PROXIES._activeProxy || CORS_PROXIES[0];
+  return proxyFn(url);
+}
+
 async function safeFetch(url, timeoutMs = 10000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const res = await fetch(url, { signal: controller.signal });
+    const finalUrl = buildUrl(url);
+    const res = await fetch(finalUrl, { signal: controller.signal });
     clearTimeout(timer);
     if (!res.ok) return null;
     return await res.json();
@@ -182,6 +208,9 @@ export function getActiveEndpoint() {
   return activeAPI;
 }
 
+// exported so ui.js can proxy stream/download URLs through the same CORS proxy
+export { buildUrl as proxyUrl };
+
 export async function searchAll(query, limit = 10) {
   if (!query?.trim()) return null;
   const encoded = encodeURIComponent(query);
@@ -225,7 +254,7 @@ export async function getLyrics(songId, trackName = '', artistName = '', albumNa
       if (albumName) url += `&album_name=${encodeURIComponent(albumName)}`;
       if (duration) url += `&duration=${Math.round(duration)}`;
 
-      const res = await fetch(url);
+      const res = await fetch(buildUrl(url));
       if (res.ok) {
         const data = await res.json();
         if (data) {
