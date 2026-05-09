@@ -128,9 +128,14 @@
 
     <!-- Playlists -->
     <section class="view view--playlists hidden" id="view-playlists">
-      <div class="view-header">
-        <h2 class="view-title"><i class="ph ph-playlist"></i> My Playlists</h2>
-        <p class="view-subtitle">Your curated collections</p>
+      <div class="view-header" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <div>
+          <h2 class="view-title"><i class="ph ph-playlist"></i> My Playlists</h2>
+          <p class="view-subtitle">Your curated collections</p>
+        </div>
+        <button class="import-trigger-btn" id="btn-import-playlist" title="Import Playlist from JSON/Text">
+          <i class="ph ph-upload-simple"></i> Import
+        </button>
       </div>
       <div class="playlists-container" id="playlists-container" style="padding: 16px 28px;"></div>
       <div class="empty-state hidden" id="playlists-empty"><i class="ph ph-list-plus"></i><p>No playlists created</p><span>Tap + on any song to create a playlist</span></div>
@@ -235,6 +240,82 @@
         </div>
         <div class="playlist-list" id="playlist-list">
           <!-- Playlists injected here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Playlist Modal -->
+  <div class="modal-overlay hidden" id="import-modal">
+    <div class="modal import-modal">
+      <div class="modal-header">
+        <h3><i class="ph ph-upload-simple"></i> Import Playlist</h3>
+        <button class="modal-close" id="import-close"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="import-name-row">
+          <input type="text" id="import-name-input" placeholder="Playlist name..." autocomplete="off" />
+        </div>
+        <div class="import-tabs">
+          <button class="import-tab active" data-tab="json"><i class="ph ph-code"></i> JSON</button>
+          <button class="import-tab" data-tab="text"><i class="ph ph-text-aa"></i> Text</button>
+          <button class="import-tab" data-tab="csv"><i class="ph ph-file-csv"></i> CSV</button>
+        </div>
+        <div class="import-tab-content" id="import-tab-json">
+          <p class="import-hint">Paste a JSON array of songs. Accepted formats:</p>
+          <pre class="import-example">[{"name": "Song Title", "artist": "Artist Name"}, ...]</pre>
+          <textarea id="import-json-input" class="import-textarea" rows="8" placeholder='[&#10;  {"name": "Blinding Lights", "artist": "The Weeknd"},&#10;  {"name": "Starboy", "artist": "The Weeknd"}&#10;]' spellcheck="false"></textarea>
+        </div>
+        <div class="import-tab-content hidden" id="import-tab-text">
+          <p class="import-hint">One song per line: <code>Song Title - Artist Name</code></p>
+          <textarea id="import-text-input" class="import-textarea" rows="8" placeholder="Blinding Lights - The Weeknd&#10;Starboy - The Weeknd&#10;Shape of You - Ed Sheeran" spellcheck="false"></textarea>
+        </div>
+        <div class="import-tab-content hidden" id="import-tab-csv">
+          <p class="import-hint">Upload a CSV from <a href="https://exportify.net" target="_blank" rel="noopener">Exportify</a> or any CSV with <code>Track Name</code> and <code>Artist Name(s)</code> columns.</p>
+          <div class="import-csv-drop" id="import-csv-drop">
+            <i class="ph ph-file-arrow-up"></i>
+            <p>Drop CSV file here or click to browse</p>
+            <span id="csv-file-name"></span>
+            <input type="file" id="import-csv-file" accept=".csv,.txt" hidden />
+          </div>
+        </div>
+
+        <!-- Help Guide -->
+        <details class="import-help" id="import-help">
+          <summary class="import-help-toggle"><i class="ph ph-question"></i> How to get songs from Spotify</summary>
+          <div class="import-help-body">
+            <div class="import-help-method">
+              <h4><i class="ph ph-terminal"></i> Quick — Browser Console</h4>
+              <ol>
+                <li>Open your playlist on <a href="https://open.spotify.com" target="_blank" rel="noopener">open.spotify.com</a></li>
+                <li>Scroll all the way down to load every song</li>
+                <li>Press <kbd>F12</kbd> then go to <strong>Console</strong> tab</li>
+                <li>Paste this script and hit Enter:</li>
+              </ol>
+              <div class="import-script-wrap">
+                <pre class="import-script" id="spotify-script">const rows=document.querySelectorAll('[data-testid="tracklist-row"]');const songs=[...rows].map(r=>{const n=r.querySelector('[data-testid="internal-track-link"] div')?.innerText||'';const a=r.querySelector('span a[href*="/artist/"]')?.innerText||'';return{name:n,artist:a}}).filter(s=>s.name);copy(JSON.stringify(songs,null,2));console.log(songs.length+' songs copied!');</pre>
+                <button class="import-copy-btn" id="copy-spotify-script" title="Copy Script"><i class="ph ph-copy"></i></button>
+              </div>
+              <p class="import-help-note">Songs are auto-copied to clipboard. Paste in the JSON tab!</p>
+            </div>
+            <div class="import-help-divider"></div>
+            <div class="import-help-method">
+              <h4><i class="ph ph-globe"></i> Easy — Use Exportify</h4>
+              <ol>
+                <li>Go to <a href="https://exportify.net" target="_blank" rel="noopener">exportify.net</a></li>
+                <li>Login with your Spotify account</li>
+                <li>Export your playlist as CSV</li>
+                <li>Upload the CSV file in the <strong>CSV</strong> tab above</li>
+              </ol>
+            </div>
+          </div>
+        </details>
+        <div class="import-progress hidden" id="import-progress">
+          <div class="import-progress-bar"><div class="import-progress-fill" id="import-progress-fill"></div></div>
+          <span class="import-progress-text" id="import-progress-text">Searching 0/0...</span>
+        </div>
+        <div class="import-actions">
+          <button class="import-btn" id="import-start-btn"><i class="ph ph-magnifying-glass"></i> Search & Import</button>
         </div>
       </div>
     </div>
@@ -411,6 +492,19 @@
         </div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- Confirm Dialog (replaces native confirm() blocked by Chrome) -->
+  <div class="modal-overlay hidden" id="confirm-modal">
+    <div class="modal confirm-dialog">
+      <div class="confirm-dialog__icon"><i class="ph ph-warning-circle"></i></div>
+      <h3 class="confirm-dialog__title" id="confirm-title">Are you sure?</h3>
+      <p class="confirm-dialog__message" id="confirm-message">This action cannot be undone.</p>
+      <div class="confirm-dialog__actions">
+        <button class="confirm-dialog__btn confirm-dialog__btn--cancel" id="confirm-cancel">Cancel</button>
+        <button class="confirm-dialog__btn confirm-dialog__btn--confirm" id="confirm-ok">Delete</button>
+      </div>
     </div>
   </div>
 

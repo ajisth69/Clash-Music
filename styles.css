@@ -635,6 +635,8 @@ body.cursor-hover .cursor-ring {
   width: 380px; max-width: 90vw; max-height: 80vh;
   box-shadow: 0 20px 60px rgba(0,0,0,0.5);
   animation: modalPop 0.3s var(--ease);
+  display: flex; flex-direction: column;
+  overflow: hidden;
 }
 @keyframes modalPop { from { transform: scale(0.95) translateY(10px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
 
@@ -651,7 +653,7 @@ body.cursor-hover .cursor-ring {
 }
 .modal-close:hover { background: rgba(255,255,255,0.12); color: #fff; }
 
-.modal-body { padding: 14px 22px 20px; }
+.modal-body { padding: 14px 22px 20px; overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 
 .shortcut-row {
   display: flex; align-items: center; justify-content: space-between;
@@ -1332,4 +1334,303 @@ body.theme-sunset   { --bg-void:#1a1008; --bg-primary:#1f150c; --bg-elevated:#2a
   .settings-panel { width: 100%; max-width: 100%; }
   .eq-range { height: 60px; }
   .library-dropdown { right: -40px; }
+
+  /* Import modal — full screen on mobile */
+  .import-modal {
+    width: 100% !important; max-width: 100vw !important;
+    max-height: 100vh !important; height: 100vh;
+    border-radius: 0 !important;
+    margin: 0;
+  }
+  .import-modal .modal-body {
+    padding: 12px 16px 20px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  .import-modal .modal-header { padding: 14px 16px; }
+  .import-tabs { gap: 2px; }
+  .import-tab { padding: 6px 8px; font-size: 0.72rem; }
+  .import-textarea { font-size: 0.72rem; min-height: 100px; }
+  .import-example { font-size: 0.6rem; padding: 6px 10px; }
+  .import-hint { font-size: 0.7rem; }
+  .import-csv-drop { padding: 24px 14px; }
+  .import-csv-drop i { font-size: 1.6rem; }
+  .import-csv-drop p { font-size: 0.75rem; }
+  .import-help-toggle { font-size: 0.72rem; padding: 8px 12px; }
+  .import-help-body { padding: 10px 12px 14px; }
+  .import-help-method li { font-size: 0.68rem; }
+  .import-script { font-size: 0.55rem; padding: 8px 34px 8px 10px; max-height: 70px; }
+  .import-btn { padding: 10px 18px; font-size: 0.78rem; width: 100%; justify-content: center; }
+  .import-actions { margin-top: 12px; }
+  .import-name-row input { padding: 9px 12px; font-size: 0.8rem; }
+  .import-trigger-btn { padding: 6px 12px; font-size: 0.72rem; }
+
+  /* Playlist header — wrap buttons on small screens */
+  .view--playlists .view-header { flex-wrap: wrap; padding: 16px 16px 10px; }
+}
+
+/* 
+   IMPORT PLAYLIST
+   */
+.import-trigger-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 18px; border-radius: var(--r-full);
+  border: 1px solid rgba(139,108,255,0.3);
+  background: linear-gradient(135deg, rgba(139,108,255,0.15), rgba(139,108,255,0.05));
+  color: var(--accent-soft); font-size: 0.8rem; font-weight: 600;
+  font-family: var(--font-body); cursor: pointer;
+  transition: all 0.25s var(--ease);
+  margin-left: auto;
+}
+.import-trigger-btn:hover {
+  background: linear-gradient(135deg, rgba(139,108,255,0.25), rgba(139,108,255,0.1));
+  border-color: rgba(139,108,255,0.5); transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(139,108,255,0.15);
+}
+.import-trigger-btn i { font-size: 1rem; }
+
+.import-modal { width: 460px; max-width: 92vw; max-height: 85vh; }
+
+.import-name-row { margin-bottom: 14px; }
+.import-name-row input {
+  width: 100%; padding: 10px 14px;
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.04); color: var(--text-primary);
+  font-size: 0.85rem; font-family: var(--font-body); outline: none;
+  transition: all 0.2s var(--ease);
+}
+.import-name-row input:focus {
+  border-color: rgba(139,108,255,0.4);
+  box-shadow: 0 0 0 3px rgba(139,108,255,0.1);
+}
+
+.import-tabs {
+  display: flex; gap: 4px; margin-bottom: 14px;
+  background: rgba(255,255,255,0.03); border-radius: var(--radius-sm);
+  padding: 3px;
+}
+.import-tab {
+  flex: 1; padding: 7px 14px; border: none; border-radius: 6px;
+  background: transparent; color: var(--text-muted); font-size: 0.78rem;
+  font-weight: 500; font-family: var(--font-body); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: all 0.2s var(--ease);
+}
+.import-tab:hover { color: var(--text-secondary); }
+.import-tab.active {
+  background: rgba(139,108,255,0.15); color: var(--accent-soft);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+.import-tab i { font-size: 0.9rem; }
+
+.import-hint {
+  font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; line-height: 1.4;
+}
+.import-hint code {
+  background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 3px;
+  font-size: 0.72rem; color: var(--text-secondary);
+}
+.import-example {
+  font-size: 0.68rem; color: var(--accent-soft);
+  background: rgba(139,108,255,0.06); border: 1px solid rgba(139,108,255,0.1);
+  border-radius: 6px; padding: 8px 12px; margin-bottom: 10px;
+  overflow-x: auto; white-space: nowrap;
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.import-textarea {
+  width: 100%; padding: 12px 14px;
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.03); color: var(--text-primary);
+  font-size: 0.78rem; font-family: 'Consolas', 'Monaco', monospace;
+  line-height: 1.5; resize: vertical; outline: none;
+  transition: all 0.2s var(--ease); min-height: 120px;
+}
+.import-textarea::placeholder { color: var(--text-muted); }
+.import-textarea:focus {
+  border-color: rgba(139,108,255,0.4);
+  box-shadow: 0 0 0 3px rgba(139,108,255,0.1);
+  background: rgba(255,255,255,0.05);
+}
+
+.import-progress { margin-top: 14px; }
+.import-progress-bar {
+  width: 100%; height: 6px; border-radius: 3px;
+  background: rgba(255,255,255,0.06); overflow: hidden;
+}
+.import-progress-fill {
+  height: 100%; width: 0%;
+  background: var(--gradient-main); border-radius: 3px;
+  transition: width 0.3s var(--ease);
+}
+.import-progress-text {
+  display: block; font-size: 0.7rem; color: var(--text-secondary);
+  margin-top: 6px; text-align: center;
+}
+
+.import-actions { margin-top: 16px; display: flex; justify-content: flex-end; }
+.import-btn {
+  padding: 10px 22px; border: none; border-radius: var(--r-full);
+  background: var(--accent); color: #fff;
+  font-size: 0.82rem; font-weight: 600; font-family: var(--font-body);
+  cursor: pointer; display: flex; align-items: center; gap: 8px;
+  transition: all 0.25s var(--ease);
+}
+.import-btn:hover {
+  background: var(--accent-soft); transform: translateY(-1px);
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+.import-btn:disabled {
+  opacity: 0.5; cursor: not-allowed; transform: none;
+  box-shadow: none;
+}
+.import-btn i { font-size: 1rem; }
+
+/* CSV Drop Zone */
+.import-csv-drop {
+  border: 2px dashed rgba(139,108,255,0.25);
+  border-radius: var(--radius-md);
+  padding: 32px 20px; text-align: center;
+  cursor: pointer; transition: all 0.25s var(--ease);
+  background: rgba(139,108,255,0.03);
+}
+.import-csv-drop:hover, .import-csv-drop.drag-over {
+  border-color: var(--accent-soft);
+  background: rgba(139,108,255,0.08);
+}
+.import-csv-drop i { font-size: 2rem; color: var(--accent-soft); margin-bottom: 8px; display: block; }
+.import-csv-drop p { font-size: 0.8rem; color: var(--text-secondary); margin: 0; }
+.import-csv-drop span { font-size: 0.72rem; color: var(--accent-soft); font-weight: 500; margin-top: 6px; display: block; }
+
+/* Help Guide */
+.import-help {
+  margin-top: 14px; border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm); overflow: hidden;
+}
+.import-help-toggle {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; cursor: pointer;
+  font-size: 0.78rem; font-weight: 500; color: var(--text-secondary);
+  background: rgba(255,255,255,0.02); transition: all 0.2s;
+  list-style: none;
+}
+.import-help-toggle::-webkit-details-marker { display: none; }
+.import-help-toggle::before {
+  content: '\25B6'; font-size: 0.55rem; color: var(--text-muted);
+  transition: transform 0.2s;
+}
+.import-help[open] .import-help-toggle::before { transform: rotate(90deg); }
+.import-help-toggle:hover { color: var(--text-primary); background: rgba(255,255,255,0.04); }
+.import-help-toggle i { color: var(--accent-soft); font-size: 1rem; }
+
+.import-help-body { padding: 12px 16px 16px; }
+.import-help-method { margin-bottom: 8px; }
+.import-help-method h4 {
+  font-size: 0.78rem; font-weight: 600; color: var(--text-primary);
+  display: flex; align-items: center; gap: 6px; margin-bottom: 8px;
+}
+.import-help-method h4 i { color: var(--accent-soft); }
+.import-help-method ol { padding-left: 18px; margin: 0; }
+.import-help-method li {
+  font-size: 0.72rem; color: var(--text-secondary); line-height: 1.6;
+}
+.import-help-method a { color: var(--accent-soft); text-decoration: none; }
+.import-help-method a:hover { text-decoration: underline; }
+.import-help-method kbd {
+  display: inline-block; padding: 1px 6px; border-radius: 4px;
+  font-size: 0.65rem; background: rgba(255,255,255,0.08);
+  border: 1px solid var(--border-subtle); color: var(--text-primary);
+  font-family: var(--font-body);
+}
+.import-help-divider {
+  height: 1px; background: var(--border-subtle); margin: 12px 0;
+}
+.import-help-note {
+  font-size: 0.68rem; color: var(--green); margin-top: 8px; font-weight: 500;
+}
+
+/* Script Copy Block */
+.import-script-wrap {
+  position: relative; margin-top: 8px;
+}
+.import-script {
+  font-size: 0.6rem; color: var(--accent-soft);
+  background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle);
+  border-radius: 6px; padding: 10px 40px 10px 12px;
+  overflow-x: auto; white-space: pre-wrap; word-break: break-all;
+  font-family: 'Consolas', 'Monaco', monospace; line-height: 1.4;
+  max-height: 80px;
+}
+.import-copy-btn {
+  position: absolute; top: 6px; right: 6px;
+  width: 28px; height: 28px; border-radius: 6px;
+  border: none; background: rgba(255,255,255,0.08);
+  color: var(--text-secondary); cursor: pointer;
+  display: grid; place-items: center; font-size: 14px;
+  transition: all 0.2s;
+}
+.import-copy-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+
+/* Custom Confirm Dialog */
+.confirm-dialog {
+  text-align: center;
+  padding: 28px 24px 22px;
+  max-width: 340px;
+}
+.confirm-dialog__icon {
+  font-size: 2.4rem;
+  color: #ff5050;
+  margin-bottom: 10px;
+  animation: confirmShake 0.4s var(--ease);
+}
+@keyframes confirmShake {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
+}
+.confirm-dialog__title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.confirm-dialog__message {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-bottom: 22px;
+  line-height: 1.5;
+}
+.confirm-dialog__actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.confirm-dialog__btn {
+  padding: 9px 24px;
+  border-radius: var(--r-full);
+  border: none;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+}
+.confirm-dialog__btn--cancel {
+  background: rgba(255,255,255,0.06);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+}
+.confirm-dialog__btn--cancel:hover {
+  background: rgba(255,255,255,0.1);
+  color: var(--text-primary);
+}
+.confirm-dialog__btn--confirm {
+  background: linear-gradient(135deg, #ff5050, #ff3333);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(255,80,80,0.25);
+}
+.confirm-dialog__btn--confirm:hover {
+  transform: scale(1.04);
+  box-shadow: 0 6px 22px rgba(255,80,80,0.35);
 }

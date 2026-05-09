@@ -79,6 +79,38 @@ function fmtDuration(sec) {
   return fmtTime(sec);
 }
 
+/* ── Custom Confirm (replaces native confirm() blocked by Chrome) ── */
+function showConfirm(title, message, confirmLabel = 'Delete') {
+  return new Promise((resolve) => {
+    const modal   = $('#confirm-modal');
+    const titleEl = $('#confirm-title');
+    const msgEl   = $('#confirm-message');
+    const okBtn   = $('#confirm-ok');
+    const cancelBtn = $('#confirm-cancel');
+    if (!modal) { resolve(false); return; }
+
+    titleEl.textContent = title;
+    msgEl.textContent   = message;
+    okBtn.textContent   = confirmLabel;
+    modal.classList.remove('hidden');
+
+    function cleanup(result) {
+      modal.classList.add('hidden');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      modal.removeEventListener('click', onBackdrop);
+      resolve(result);
+    }
+    function onOk()       { cleanup(true);  }
+    function onCancel()   { cleanup(false); }
+    function onBackdrop(e) { if (e.target === modal) cleanup(false); }
+
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    modal.addEventListener('click', onBackdrop);
+  });
+}
+
 /* ── Toast ── */
 export function showToast(msg, icon = 'ph ph-check-circle') {
   const t = document.createElement('div');
@@ -617,8 +649,13 @@ function showPlaylists() {
 
     // Bind delete event
     const delBtn = hdr.querySelector('.playlist-delete-btn');
-    delBtn.addEventListener('click', () => {
-      if (confirm(`Delete "${decode(p.name)}"? This can't be undone.`)) {
+    delBtn.addEventListener('click', async () => {
+      const confirmed = await showConfirm(
+        `Delete "${decode(p.name)}"?`,
+        "This can't be undone. All songs in this playlist will be lost.",
+        'Delete'
+      );
+      if (confirmed) {
         Storage.deletePlaylist(p.id);
         showToast(`Deleted "${decode(p.name)}"`, 'ph ph-trash');
         showPlaylists();

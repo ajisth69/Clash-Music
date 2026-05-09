@@ -276,6 +276,17 @@ export function importPlaylist(name, songsArray) {
   return newPlaylist;
 }
 
+export function deletePlaylist(playlistId) {
+  if (!playlistId) return false;
+  const pList = getPlaylists();
+  const filtered = pList.filter(p => p.id !== playlistId);
+  if (filtered.length !== pList.length) {
+    writeJSON(KEYS.PLAYLISTS, filtered);
+    return true;
+  }
+  return false;
+}
+
 /* SETTINGS — Equalizer, Visualizer, etc. */
 
 /* ── Equalizer ── */
