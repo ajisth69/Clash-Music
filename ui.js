@@ -594,6 +594,7 @@ function showPlaylists() {
         <i class="ph ph-download-simple"></i>
         <span>Download All</span>
       </button>
+      <button class="playlist-delete-btn" data-id="${p.id}" title="Delete Playlist" style="background:rgba(255,80,80,0.08); border:1px solid rgba(255,80,80,0.15); border-radius:6px; padding:6px 8px; color:#ff5050; cursor:pointer; display:inline-flex; align-items:center; gap:4px; transition: all 0.2s; margin-left:auto;" aria-label="Delete Playlist"><i class="ph ph-trash"></i></button>
     `;
     pContainer.appendChild(hdr);
     
@@ -613,9 +614,19 @@ function showPlaylists() {
     dlAllBtn.addEventListener('click', () => {
       bulkDownloadPlaylist(p.songs, p.name, dlAllBtn);
     });
+
+    // Bind delete event
+    const delBtn = hdr.querySelector('.playlist-delete-btn');
+    delBtn.addEventListener('click', () => {
+      if (confirm(`Delete "${decode(p.name)}"? This can't be undone.`)) {
+        Storage.deletePlaylist(p.id);
+        showToast(`Deleted "${decode(p.name)}"`, 'ph ph-trash');
+        showPlaylists();
+      }
+    });
     
     // Hover effects for buttons
-    [shareBtn, dlAllBtn].forEach(b => {
+    [shareBtn, dlAllBtn, delBtn].forEach(b => {
       b.addEventListener('mouseenter', () => { b.style.filter = 'brightness(1.3)'; });
       b.addEventListener('mouseleave', () => { b.style.filter = ''; });
     });
@@ -1174,6 +1185,9 @@ export function initUI() {
     }
   });
 
+  // Import Playlist Modal
+  initImportPlaylist();
+
   // Album art click → fullscreen player
   artWrap?.addEventListener('click', () => {
     if (Player.getCurrentSong()) toggleNowPlaying();
@@ -1203,6 +1217,8 @@ export function initUI() {
       if (queue && !queue.classList.contains('hidden')) { queue.classList.add('hidden'); return; }
       const playlistModal = $('#playlist-modal');
       if (playlistModal && !playlistModal.classList.contains('hidden')) { closePlaylistModal(); return; }
+      const importModal = $('#import-modal');
+      if (importModal && !importModal.classList.contains('hidden') && !isImporting) { importModal.classList.add('hidden'); document.body.style.overflow = ''; return; }
       if (isTyping && document.activeElement === searchInput) { searchInput.value = ''; searchInput.blur(); showHome(); return; }
       if (isTyping) { document.activeElement.blur(); return; }
     }
@@ -1564,6 +1580,378 @@ function startNPVisualizer() {
 
 function stopNPVisualizer() {
   Vis.stopVisualizer();
+}
+
+/* IMPORT PLAYLIST */
+let isImporting = false;
+
+let pendingCSVSongs = []; // Parsed CSV data waiting to be imported
+
+function initImportPlaylist() {
+  const modal = $('#import-modal');
+  const closeBtn = $('#import-close');
+  const triggerBtn = $('#btn-import-playlist');
+  const startBtn = $('#import-start-btn');
+
+  if (!modal) return;
+
+  // Open modal
+  triggerBtn?.addEventListener('click', () => {
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; // Lock background scroll
+    // Reset state
+    $('#import-json-input').value = '';
+    $('#import-text-input').value = '';
+    $('#import-name-input').value = '';
+    $('#csv-file-name').textContent = '';
+    $('#import-csv-file').value = '';
+    pendingCSVSongs = [];
+    $('#import-progress')?.classList.add('hidden');
+    startBtn.disabled = false;
+    startBtn.innerHTML = '<i class="ph ph-magnifying-glass"></i> Search & Import';
+  });
+
+  // Close modal
+  const closeImportModal = () => {
+    if (!isImporting) {
+      modal.classList.add('hidden');
+      document.body.style.overflow = ''; // Unlock background scroll
+    }
+  };
+  closeBtn?.addEventListener('click', closeImportModal);
+  modal?.addEventListener('click', (e) => { if (e.target === modal) closeImportModal(); });
+
+  // Tab switching (JSON / Text / CSV)
+  $$('.import-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      $$('.import-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const target = tab.dataset.tab;
+      $('#import-tab-json')?.classList.toggle('hidden', target !== 'json');
+      $('#import-tab-text')?.classList.toggle('hidden', target !== 'text');
+      $('#import-tab-csv')?.classList.toggle('hidden', target !== 'csv');
+    });
+  });
+
+  // CSV drop zone + file input
+  const dropZone = $('#import-csv-drop');
+  const fileInput = $('#import-csv-file');
+
+  if (dropZone && fileInput) {
+    // Click to browse
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    // File selected
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length) handleCSVFile(fileInput.files[0]);
+    });
+
+    // Drag & drop
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      const file = e.dataTransfer?.files?.[0];
+      if (file) handleCSVFile(file);
+    });
+  }
+
+  // Copy Spotify script button
+  $('#copy-spotify-script')?.addEventListener('click', () => {
+    const script = $('#spotify-script')?.textContent;
+    if (script) {
+      navigator.clipboard.writeText(script).then(() => {
+        showToast('Script copied to clipboard!', 'ph ph-check-circle');
+      });
+    }
+  });
+
+  // Start import
+  startBtn?.addEventListener('click', () => runImport());
+}
+
+// Handle a dropped/selected CSV file
+function handleCSVFile(file) {
+  if (!file.name.match(/\.(csv|txt)$/i)) {
+    showToast('Please select a CSV file', 'ph ph-warning-circle');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const text = e.target.result;
+    const songs = parseCSV(text);
+    pendingCSVSongs = songs;
+
+    const nameEl = $('#csv-file-name');
+    if (nameEl) nameEl.textContent = `${file.name} — ${songs.length} songs found`;
+
+    if (!songs.length) {
+      showToast('No songs found in CSV. Check the format.', 'ph ph-warning-circle');
+    } else {
+      showToast(`Found ${songs.length} songs in CSV`, 'ph ph-check-circle');
+      // Auto-fill playlist name from filename if empty
+      const nameInput = $('#import-name-input');
+      if (nameInput && !nameInput.value.trim()) {
+        nameInput.value = file.name.replace(/\.(csv|txt)$/i, '').replace(/_/g, ' ');
+      }
+    }
+  };
+  reader.readAsText(file);
+}
+
+// Parse Exportify-style CSV (or any CSV with track/artist columns)
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/);
+  if (lines.length < 2) return [];
+
+  // Parse header to find column indices
+  const header = parseCSVLine(lines[0]).map(h => h.toLowerCase().trim());
+
+  // Try multiple common column names
+  const trackIdx = header.findIndex(h =>
+    h === 'track name' || h === 'name' || h === 'title' || h === 'song' || h === 'track'
+  );
+  const artistIdx = header.findIndex(h =>
+    h === 'artist name(s)' || h === 'artist name' || h === 'artist' || h === 'artists'
+  );
+
+  if (trackIdx === -1) {
+    // Fallback: assume first column is track, second is artist
+    if (header.length >= 2) {
+      return lines.slice(1).map(line => {
+        const cols = parseCSVLine(line);
+        if (!cols[0]?.trim()) return null;
+        return { name: cols[0].trim(), artist: (cols[1] || '').trim() };
+      }).filter(Boolean);
+    }
+    return [];
+  }
+
+  const songs = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = parseCSVLine(lines[i]);
+    const name = (cols[trackIdx] || '').trim();
+    const artist = artistIdx >= 0 ? (cols[artistIdx] || '').trim() : '';
+    if (name) songs.push({ name, artist });
+  }
+  return songs;
+}
+
+// Simple CSV line parser that handles quoted fields
+function parseCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"' && line[i + 1] === '"') {
+        current += '"'; i++; // escaped quote
+      } else if (ch === '"') {
+        inQuotes = false;
+      } else {
+        current += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === ',') {
+        result.push(current); current = '';
+      } else {
+        current += ch;
+      }
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+// Normalize a string for comparison: lowercase, strip special chars
+function normalizeStr(str) {
+  return (str || '').toLowerCase()
+    .replace(/[\(\)\[\]\-_\.,;:'"!?&@#]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Compute word overlap similarity (0-1) between two strings
+function wordSimilarity(a, b) {
+  const wordsA = new Set(normalizeStr(a).split(' ').filter(w => w.length > 1));
+  const wordsB = new Set(normalizeStr(b).split(' ').filter(w => w.length > 1));
+  if (!wordsA.size || !wordsB.size) return 0;
+  let overlap = 0;
+  for (const w of wordsA) { if (wordsB.has(w)) overlap++; }
+  return overlap / Math.max(wordsA.size, wordsB.size);
+}
+
+// Find the best matching result from search results with similarity validation
+function findBestMatch(queryName, queryArtist, results) {
+  let bestScore = 0;
+  let bestResult = null;
+
+  for (const r of results) {
+    const resultTitle = r.title || r.name || '';
+    const resultArtist = (r.artist || r.artists || r.primary_artists || '');
+    
+    // Score based on title match
+    let score = wordSimilarity(queryName, resultTitle);
+    
+    // Bonus if artist also matches
+    if (queryArtist && resultArtist) {
+      const artistScore = wordSimilarity(queryArtist, resultArtist);
+      score = score * 0.7 + artistScore * 0.3;
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestResult = r;
+    }
+  }
+
+  // Require at least 30% similarity to accept
+  return bestScore >= 0.3 ? bestResult : null;
+}
+
+async function runImport() {
+  if (isImporting) return;
+
+  const nameInput = $('#import-name-input');
+  const playlistName = nameInput?.value.trim() || 'Imported Playlist';
+  const activeTab = $('.import-tab.active')?.dataset?.tab || 'json';
+  const progressEl = $('#import-progress');
+  const fillEl = $('#import-progress-fill');
+  const textEl = $('#import-progress-text');
+  const startBtn = $('#import-start-btn');
+
+  // Parse songs from input
+  let songQueries = [];
+
+  if (activeTab === 'json') {
+    const raw = $('#import-json-input')?.value?.trim();
+    if (!raw) { showToast('Paste some JSON first', 'ph ph-warning-circle'); return; }
+
+    try {
+      let parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) parsed = [parsed];
+
+      songQueries = parsed.map(item => {
+        // Support multiple JSON shapes
+        const name = item.name || item.title || item.track || item.song || '';
+        const artist = item.artist || item.artists || item.artist_name || '';
+        if (!name) return null;
+        return { name: name.trim(), artist: (typeof artist === 'string' ? artist : '').trim() };
+      }).filter(Boolean);
+    } catch {
+      showToast('Invalid JSON — check the format', 'ph ph-warning-circle');
+      return;
+    }
+  } else if (activeTab === 'text') {
+    const raw = $('#import-text-input')?.value?.trim();
+    if (!raw) { showToast('Paste some songs first', 'ph ph-warning-circle'); return; }
+
+    songQueries = raw.split('\n').map(line => {
+      line = line.trim();
+      if (!line) return null;
+      // Try "Song - Artist" format
+      const dashIdx = line.indexOf(' - ');
+      if (dashIdx > 0) {
+        return { name: line.slice(0, dashIdx).trim(), artist: line.slice(dashIdx + 3).trim() };
+      }
+      // Fallback: use the whole line as search query
+      return { name: line, artist: '' };
+    }).filter(Boolean);
+  } else if (activeTab === 'csv') {
+    if (!pendingCSVSongs.length) {
+      showToast('Upload a CSV file first', 'ph ph-warning-circle');
+      return;
+    }
+    songQueries = [...pendingCSVSongs];
+  }
+
+  if (!songQueries.length) {
+    showToast('No songs found in input', 'ph ph-warning-circle');
+    return;
+  }
+
+  if (songQueries.length > 50) {
+    showToast('Max 50 songs per import', 'ph ph-warning-circle');
+    songQueries = songQueries.slice(0, 50);
+  }
+
+  // Start importing
+  isImporting = true;
+  startBtn.disabled = true;
+  startBtn.innerHTML = '<i class="ph ph-spinner spin-anim"></i> Importing...';
+  progressEl?.classList.remove('hidden');
+  fillEl.style.width = '0%';
+  textEl.textContent = `Searching 0/${songQueries.length}...`;
+
+  const matched = [];
+  const skippedNames = [];
+  let failed = 0;
+
+  for (let i = 0; i < songQueries.length; i++) {
+    const q = songQueries[i];
+    const searchQuery = q.artist ? `${q.name} ${q.artist}` : q.name;
+
+    textEl.textContent = `Searching ${i + 1}/${songQueries.length}...`;
+    fillEl.style.width = `${((i + 1) / songQueries.length) * 100}%`;
+
+    try {
+      const results = await Api.searchSongs(searchQuery, 5);
+      if (results?.length) {
+        // Find the best match with similarity validation
+        const bestMatch = findBestMatch(q.name, q.artist, results);
+        if (bestMatch) {
+          matched.push(bestMatch);
+        } else {
+          failed++;
+          skippedNames.push(q.name);
+        }
+      } else {
+        failed++;
+        skippedNames.push(q.name);
+      }
+    } catch {
+      failed++;
+      skippedNames.push(q.name);
+    }
+
+    // Small delay to avoid hammering the API
+    if (i < songQueries.length - 1) {
+      await new Promise(r => setTimeout(r, 300));
+    }
+  }
+
+  // Create playlist
+  if (matched.length > 0) {
+    Storage.importPlaylist(playlistName, matched);
+    let msg = `Imported "${playlistName}" — ${matched.length} matched`;
+    if (failed) msg += `, ${failed} skipped`;
+    showToast(msg, 'ph ph-check-circle');
+    if (skippedNames.length) {
+      console.log('[Import] Skipped songs (no good match):', skippedNames);
+    }
+    // Refresh playlists view
+    showPlaylists();
+  } else {
+    showToast('No songs could be matched on JioSaavn', 'ph ph-x-circle');
+  }
+
+  // Reset
+  isImporting = false;
+  startBtn.disabled = false;
+  startBtn.innerHTML = '<i class="ph ph-magnifying-glass"></i> Search & Import';
+  textEl.textContent = `Done — ${matched.length} matched, ${failed} missed`;
+
+  // Close modal after short delay
+  setTimeout(() => {
+    $('#import-modal')?.classList.add('hidden');
+    document.body.style.overflow = '';
+  }, 1500);
 }
 
 /* CUSTOM SELECT HELPERS */
