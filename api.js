@@ -3,8 +3,11 @@
 // pool of mirrors — if one goes down, we try the next
 // saavn.dev removed (DNS dead), order by reliability
 const API_POOL = [
+  'https://saavn.dev/api', // Adding saavn.dev as it's been restored for some
+  'https://jiosaavn-api-v3.vercel.app/api',
   'https://jiosaavn-api-two-beta.vercel.app/api',
   'https://jiosaavn-api-privatecvc2.vercel.app/api',
+  'https://saavn-api.vercel.app/api',
   'https://jio-savaan-private.vercel.app/api',
   'https://saavn-api-three.vercel.app/api',
   'https://jiosaavn-api-ts.vercel.app/api',
@@ -12,7 +15,10 @@ const API_POOL = [
 
 // CORS proxies — fallback when direct fetch fails (CORS blocks, 403s, etc)
 const CORS_PROXIES = [
-  (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+  (url) => `https://cors-proxy.fringe.zone/${url}`,
+  (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  (url) => `https://thingproxy.freeboard.io/fetch/${url}`,
   (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
 ];
 
@@ -125,15 +131,16 @@ async function resilientFetch(url, timeoutMs = 10000) {
   }
 
   // direct failed — try each proxy as fallback
-  if (!preferProxy) {
-    for (const proxyFn of CORS_PROXIES) {
-      const result = await rawFetch(proxyFn(url), timeoutMs);
-      if (result) {
-        preferProxy = true;
-        activeProxyFn = proxyFn;
-        console.log('[API] Switched to proxy mode');
-        return result;
-      }
+  for (const proxyFn of CORS_PROXIES) {
+    // don't retry the activeProxyFn if we just tried it at the top and it failed
+    if (preferProxy && proxyFn === activeProxyFn) continue;
+
+    const result = await rawFetch(proxyFn(url), timeoutMs);
+    if (result) {
+      preferProxy = true;
+      activeProxyFn = proxyFn;
+      console.log('[API] Switched to proxy mode');
+      return result;
     }
   }
 
