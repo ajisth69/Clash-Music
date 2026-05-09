@@ -1,4 +1,4 @@
-// api.js — JioSaavn API with multi-endpoint failover + CORS proxy for Brave
+// api.js — JioSaavn API with multi-endpoint failover + auto CORS proxy
 
 // pool of mirrors — if one goes down, we try the next
 // saavn.dev removed (DNS dead), order by reliability
@@ -10,7 +10,7 @@ const API_POOL = [
   'https://jiosaavn-api-ts.vercel.app/api',
 ];
 
-// CORS proxies — used when direct fetch fails (Brave shields, strict CORS)
+// CORS proxies — fallback when direct fetch fails (CORS blocks, 403s, etc)
 const CORS_PROXIES = [
   (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
   (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
@@ -18,7 +18,8 @@ const CORS_PROXIES = [
 
 let activeAPI = null;
 let apiCheckDone = false;
-let needsProxy = false; // true if direct fetch failed during probing (Brave etc)
+let preferProxy = false;     // sticky hint — if proxy worked, prefer it next time
+let activeProxyFn = null;    // which proxy function last worked
 
 // probe each endpoint at startup, pick the first one that responds
 async function findActiveAPI() {
@@ -26,7 +27,7 @@ async function findActiveAPI() {
 
   console.log('[API] Probing', API_POOL.length, 'endpoints...');
 
-  // first try direct (works in Chrome/Edge/Firefox)
+  // try direct first (fast path for browsers that allow cross-origin)
   const probes = API_POOL.map(async (base) => {
     try {
       const controller = new AbortController();
@@ -37,9 +38,7 @@ async function findActiveAPI() {
       clearTimeout(timer);
       if (res.ok) {
         const json = await res.json();
-        if (json?.success || json?.data) {
-          return base;
-        }
+        if (json?.success || json?.data) return base;
       }
     } catch { /* skip */ }
     return null;
@@ -49,20 +48,19 @@ async function findActiveAPI() {
   for (const r of results) {
     if (r.status === 'fulfilled' && r.value) {
       activeAPI = r.value;
-      needsProxy = false;
+      preferProxy = false;
       console.log('[API] Using (direct):', activeAPI);
       apiCheckDone = true;
       return activeAPI;
     }
   }
 
-  // direct failed everywhere — likely CORS blocked (Brave), try via proxy
-  console.warn('[API] Direct fetch failed on all endpoints, trying CORS proxy...');
+  // direct failed on all — try via CORS proxy
+  console.warn('[API] Direct fetch failed everywhere, trying CORS proxy...');
   for (const base of API_POOL) {
     for (const proxyFn of CORS_PROXIES) {
       try {
-        const testUrl = `${base}/search/songs?query=test&limit=1`;
-        const proxied = proxyFn(testUrl);
+        const proxied = proxyFn(`${base}/search/songs?query=test&limit=1`);
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), 8000);
         const res = await fetch(proxied, { signal: controller.signal });
@@ -71,36 +69,36 @@ async function findActiveAPI() {
           const json = await res.json();
           if (json?.success || json?.data) {
             activeAPI = base;
-            needsProxy = true;
-            // remember which proxy works
-            CORS_PROXIES._activeProxy = proxyFn;
-            console.log('[API] Using (via CORS proxy):', activeAPI);
+            preferProxy = true;
+            activeProxyFn = proxyFn;
+            console.log('[API] Using (via proxy):', activeAPI);
             apiCheckDone = true;
             return activeAPI;
           }
         }
-      } catch { /* next proxy/endpoint */ }
+      } catch { /* next */ }
     }
   }
 
-  console.error('[API] No working endpoint found (direct or proxied)');
+  console.error('[API] No working endpoint found');
   apiCheckDone = true;
   return null;
 }
 
-// fetch with automatic failover — tries active endpoint first, rotates on failure
+// core fetch with automatic failover across endpoints + proxy fallback per-request
 async function apiFetch(path, timeoutMs = 10000) {
   if (!activeAPI) await findActiveAPI();
   if (!activeAPI) return null;
 
-  let result = await safeFetch(`${activeAPI}${path}`, timeoutMs);
+  // try active endpoint first
+  let result = await resilientFetch(`${activeAPI}${path}`, timeoutMs);
   if (result) return result;
 
-  // active failed, try others
+  // active endpoint failed even with proxy fallback, rotate to others
   console.warn(`[API] ${activeAPI} failed, rotating...`);
   for (const base of API_POOL) {
     if (base === activeAPI) continue;
-    result = await safeFetch(`${base}${path}`, timeoutMs);
+    result = await resilientFetch(`${base}${path}`, timeoutMs);
     if (result) {
       activeAPI = base;
       console.log('[API] Switched to:', activeAPI);
@@ -111,20 +109,43 @@ async function apiFetch(path, timeoutMs = 10000) {
   return null;
 }
 
-// wraps URL through CORS proxy if needed (Brave etc)
-function buildUrl(url) {
-  if (!needsProxy) return url;
-  const proxyFn = CORS_PROXIES._activeProxy || CORS_PROXIES[0];
-  return proxyFn(url);
+// tries direct fetch, then proxy fallback — self-healing per request
+async function resilientFetch(url, timeoutMs = 10000) {
+  // if proxy already known to be needed, try proxy first for speed
+  if (preferProxy && activeProxyFn) {
+    const result = await rawFetch(activeProxyFn(url), timeoutMs);
+    if (result) return result;
+  }
+
+  // try direct
+  const direct = await rawFetch(url, timeoutMs);
+  if (direct) {
+    preferProxy = false; // direct works, no need for proxy
+    return direct;
+  }
+
+  // direct failed — try each proxy as fallback
+  if (!preferProxy) {
+    for (const proxyFn of CORS_PROXIES) {
+      const result = await rawFetch(proxyFn(url), timeoutMs);
+      if (result) {
+        preferProxy = true;
+        activeProxyFn = proxyFn;
+        console.log('[API] Switched to proxy mode');
+        return result;
+      }
+    }
+  }
+
+  return null;
 }
 
-async function safeFetch(url, timeoutMs = 10000) {
+// lowest level fetch — just does the request, returns JSON or null
+async function rawFetch(url, timeoutMs = 10000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
-
   try {
-    const finalUrl = buildUrl(url);
-    const res = await fetch(finalUrl, { signal: controller.signal });
+    const res = await fetch(url, { signal: controller.signal });
     clearTimeout(timer);
     if (!res.ok) return null;
     return await res.json();
@@ -132,6 +153,12 @@ async function safeFetch(url, timeoutMs = 10000) {
     clearTimeout(timer);
     return null;
   }
+}
+
+// public helper — wraps any URL through the active CORS proxy if needed
+function buildUrl(url) {
+  if (!preferProxy || !activeProxyFn) return url;
+  return activeProxyFn(url);
 }
 
 // normalize the raw API response into a consistent shape
