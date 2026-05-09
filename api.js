@@ -3,14 +3,8 @@
 // pool of mirrors — if one goes down, we try the next
 // saavn.dev removed (DNS dead), order by reliability
 const API_POOL = [
-  'https://saavn.dev/api', // Adding saavn.dev as it's been restored for some
-  'https://jiosaavn-api-v3.vercel.app/api',
+  'https://jiosavan.ajisth007.workers.dev/api',
   'https://jiosaavn-api-two-beta.vercel.app/api',
-  'https://jiosaavn-api-privatecvc2.vercel.app/api',
-  'https://saavn-api.vercel.app/api',
-  'https://jio-savaan-private.vercel.app/api',
-  'https://saavn-api-three.vercel.app/api',
-  'https://jiosaavn-api-ts.vercel.app/api',
 ];
 
 // CORS proxies — fallback when direct fetch fails (CORS blocks, 403s, etc)
