@@ -6,7 +6,11 @@ import * as Storage from './storage.js';
 import * as UI      from './ui.js';
 
 const CATEGORIES = [
-  { rowId: 'row-anime',     query: 'anime opening song japanese',   label: 'Anime OSTs' },
+  { 
+    rowId: 'row-anime',     
+    queries: ['Anime Opening', 'Dikz', 'Rage The Rapper', 'The Real Insane', 'Anime Rap'], 
+    label: 'Anime OSTs' 
+  },
   { rowId: 'row-bollywood', query: 'bollywood latest hits 2024',    label: 'Bollywood Hits' },
   { rowId: 'row-global',    query: 'top english hits 2024',         label: 'Global Top Charts' },
   { rowId: 'row-lofi',      query: 'lofi chill beats hindi',        label: 'Lo-Fi & Chill' },
@@ -54,8 +58,22 @@ async function loadCategories() {
       const container = document.getElementById(cat.rowId);
       if (!container) return;
       try {
-        const songs = await API.fetchCategorySongs(cat.query, 15);
-        UI.renderSongRow(container, songs);
+        let songs = [];
+        if (cat.queries) {
+          // Fetch from multiple queries and merge
+          const results = await Promise.allSettled(cat.queries.map(q => API.fetchCategorySongs(q, 6)));
+          results.forEach(r => {
+            if (r.status === 'fulfilled' && r.value) {
+              songs = [...songs, ...r.value];
+            }
+          });
+          // Shuffle a bit so it's not always the same order
+          songs.sort(() => Math.random() - 0.5);
+        } else {
+          songs = await API.fetchCategorySongs(cat.query, 15);
+        }
+        
+        UI.renderSongRow(container, songs.slice(0, 20));
       } catch {
         container.innerHTML = `<p style="color:var(--text-muted);padding:16px;font-size:0.8rem;">Could not load.</p>`;
       }
