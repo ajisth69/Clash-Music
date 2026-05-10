@@ -1,21 +1,21 @@
 // main.js — app entry point
 
-import * as API     from './api.js';
-import * as Player  from './player.js';
+import * as API from './api.js';
+import * as Player from './player.js';
 import * as Storage from './storage.js';
-import * as UI      from './ui.js';
+import * as UI from './ui.js';
 
 const CATEGORIES = [
-  { 
-    rowId: 'row-anime',     
-    queries: ['Anime Opening', 'Dikz', 'Rage The Rapper', 'The Real Insane', 'Anime Rap'], 
-    label: 'Anime OSTs' 
+  {
+    rowId: 'row-anime',
+    queries: ['Anime Opening', 'Dikz', 'Rage The Rapper', 'Anime Songs', 'Anime Rap'],
+    label: 'Anime OSTs'
   },
-  { rowId: 'row-bollywood', query: 'bollywood latest hits 2024',    label: 'Bollywood Hits' },
-  { rowId: 'row-global',    query: 'top english hits 2024',         label: 'Global Top Charts' },
-  { rowId: 'row-lofi',      query: 'lofi chill beats hindi',        label: 'Lo-Fi & Chill' },
-  { rowId: 'row-punjabi',   query: 'punjabi hits latest 2024 sidhu',label: 'Punjabi Bangers' },
-  { rowId: 'row-golden',    query: 'old hindi golden songs classic', label: 'Golden Era Classics' },
+  { rowId: 'row-bollywood', query: 'bollywood latest hits 2024', label: 'Bollywood Hits' },
+  { rowId: 'row-global', query: 'top english hits 2024', label: 'Global Top Charts' },
+  { rowId: 'row-lofi', query: 'lofi chill beats hindi', label: 'Lo-Fi & Chill' },
+  { rowId: 'row-punjabi', query: 'punjabi hits latest 2024 sidhu', label: 'Punjabi Bangers' },
+  { rowId: 'row-golden', query: 'old hindi golden songs classic', label: 'Golden Era Classics' },
 ];
 
 async function boot() {
@@ -45,11 +45,11 @@ function setGreeting() {
   const el = document.getElementById('hero-greeting');
   if (!el) return;
   const h = new Date().getHours();
-  if (h < 5)       el.textContent = 'Night owl mode 🦉';
+  if (h < 5) el.textContent = 'Night owl mode 🦉';
   else if (h < 12) el.textContent = 'Good morning ☀️';
   else if (h < 17) el.textContent = 'Good afternoon';
   else if (h < 21) el.textContent = 'Good evening ✨';
-  else             el.textContent = 'Good night 🌙';
+  else el.textContent = 'Good night 🌙';
 }
 
 async function loadCategories() {
@@ -72,7 +72,7 @@ async function loadCategories() {
         } else {
           songs = await API.fetchCategorySongs(cat.query, 15);
         }
-        
+
         UI.renderSongRow(container, songs.slice(0, 20));
       } catch {
         container.innerHTML = `<p style="color:var(--text-muted);padding:16px;font-size:0.8rem;">Could not load.</p>`;
@@ -84,8 +84,8 @@ async function loadCategories() {
 // recommendation engine — builds queries from listening history
 async function loadRecommendations() {
   const section = document.getElementById('section-taste');
-  const row     = document.getElementById('row-taste');
-  const tag     = document.getElementById('taste-tag');
+  const row = document.getElementById('row-taste');
+  const tag = document.getElementById('taste-tag');
   if (!section || !row) return;
 
   const queries = Storage.getTasteQueries();
@@ -164,19 +164,19 @@ function wireSearch() {
   });
 
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { 
-      input.value = ''; 
-      input.blur(); 
-      UI.showHome(); 
-      return; 
+    if (e.key === 'Escape') {
+      input.value = '';
+      input.blur();
+      UI.showHome();
+      return;
     }
-    
+
     if (e.key === 'Enter') {
       e.preventDefault();
       clearTimeout(searchTimer);
       const q = input.value.trim();
       if (!q) return;
-      
+
       input.blur();
       UI.showToast(`Searching for "${q}"...`, 'ph ph-spinner spin-anim');
       API.searchAll(q, 15)
