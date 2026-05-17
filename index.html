@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Clash Musics — Hi-Fi music streaming with Spatial Audio." />
+  <meta name="theme-color" content="#0a0a12" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎵%3C/text%3E%3C/svg%3E">
+  <title>Clash Musics — Stream Music Beautifully</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.0.3/src/regular/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.0.3/src/fill/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.0.3/src/bold/style.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <!-- Custom cursor -->
+  <div class="cursor-dot" id="cursor-dot"></div>
+  <div class="cursor-ring" id="cursor-ring"></div>
+
+  <!-- Background -->
+  <div class="bg-mesh" aria-hidden="true"></div>
+  <div class="bg-orbs" aria-hidden="true">
+    <div class="orb orb--1"></div><div class="orb orb--2"></div><div class="orb orb--3"></div>
+  </div>
+  <div class="bg-noise" aria-hidden="true"></div>
+  <div class="ambient-glow" id="ambient-glow" aria-hidden="true"></div>
+
+  <!-- Top Bar -->
+  <header class="topbar" id="topbar">
+    <div class="topbar__brand">
+      <div class="brand-logo"><i class="ph-bold ph-music-notes-plus"></i></div>
+      <span class="topbar__title">Clash Musics</span>
+    </div>
+    <div class="topbar__search" id="search-container">
+      <i class="ph ph-magnifying-glass"></i>
+      <input type="search" id="search-input" placeholder="What do you want to listen to?" autocomplete="off" aria-label="Search" />
+      <kbd class="search-kbd" aria-hidden="true">/</kbd>
+    </div>
+    <nav class="topbar__nav">
+      <button class="nav-btn" id="btn-home" aria-label="Home" title="Home"><i class="ph ph-house"></i></button>
+      <!-- Library dropdown trigger -->
+      <div class="nav-dropdown-wrap">
+        <button class="nav-btn" id="btn-library" aria-label="Library" title="Library"><i class="ph ph-books"></i></button>
+        <div class="library-dropdown hidden" id="library-dropdown">
+          <button class="lib-item" id="btn-liked"><i class="ph ph-heart"></i> Liked Songs</button>
+          <button class="lib-item" id="btn-playlists"><i class="ph ph-playlist"></i> My Playlists</button>
+          <button class="lib-item" id="btn-history"><i class="ph ph-clock-counter-clockwise"></i> History</button>
+        </div>
+      </div>
+      <button class="nav-btn" id="btn-settings" aria-label="Settings" title="Settings"><i class="ph ph-gear-six"></i></button>
+    </nav>
+  </header>
+
+  <!-- Recent Searches -->
+  <div class="recent-searches hidden" id="recent-searches">
+    <div class="recent-searches__header"><span>Recent</span><button id="clear-recent" class="recent-clear">Clear</button></div>
+    <div class="recent-searches__chips" id="recent-chips"></div>
+  </div>
+
+  <!-- Main -->
+  <main class="main-content" id="main-content">
+    <!-- Home -->
+    <section class="view view--home" id="view-home">
+      <div class="hero reveal">
+        <h1 class="hero__greeting" id="hero-greeting">Good evening</h1>
+        <p class="hero__subtitle">What sounds good today?</p>
+      </div>
+
+      <div class="category-section category-section--featured reveal hidden" id="section-taste">
+        <div class="category-header">
+          <div class="category-label"><i class="ph-fill ph-sparkle"></i><h2>Your Taste</h2></div>
+          <span class="category-tag" id="taste-tag"></span>
+        </div>
+        <div class="scroll-row" id="row-taste"><div class="skeleton-loader"></div></div>
+      </div>
+
+      <div class="category-section reveal" id="section-anime">
+        <div class="category-header"><div class="category-label"><i class="ph ph-shooting-star"></i><h2>Anime OSTs</h2></div></div>
+        <div class="scroll-row" id="row-anime"><div class="skeleton-loader"></div></div>
+      </div>
+      <div class="category-section reveal" id="section-bollywood">
+        <div class="category-header"><div class="category-label"><i class="ph ph-film-strip"></i><h2>Bollywood Hits</h2></div></div>
+        <div class="scroll-row" id="row-bollywood"><div class="skeleton-loader"></div></div>
+      </div>
+      <div class="category-section reveal" id="section-global">
+        <div class="category-header"><div class="category-label"><i class="ph ph-globe-hemisphere-west"></i><h2>Global Top Charts</h2></div></div>
+        <div class="scroll-row" id="row-global"><div class="skeleton-loader"></div></div>
+      </div>
+      <div class="category-section reveal" id="section-lofi">
+        <div class="category-header"><div class="category-label"><i class="ph ph-headphones"></i><h2>Lo-Fi & Chill</h2></div></div>
+        <div class="scroll-row" id="row-lofi"><div class="skeleton-loader"></div></div>
+      </div>
+      <div class="category-section reveal" id="section-punjabi">
+        <div class="category-header"><div class="category-label"><i class="ph ph-microphone-stage"></i><h2>Punjabi Bangers</h2></div></div>
+        <div class="scroll-row" id="row-punjabi"><div class="skeleton-loader"></div></div>
+      </div>
+      <div class="category-section reveal" id="section-golden">
+        <div class="category-header"><div class="category-label"><i class="ph ph-vinyl-record"></i><h2>Golden Era Classics</h2></div></div>
+        <div class="scroll-row" id="row-golden"><div class="skeleton-loader"></div></div>
+      </div>
+
+      <!-- Infinite scroll sentinel -->
+      <div id="home-scroll-sentinel" style="height:1px;width:100%;"></div>
+    </section>
+
+    <!-- Search -->
+    <section class="view view--search hidden" id="view-search">
+      <div class="view-header" style="padding-bottom:10px">
+        <h2 class="view-title" id="search-results-title">Search Results</h2>
+        <p class="view-subtitle" id="search-results-sub">Here is what we found</p>
+      </div>
+      <div class="search-spinner hidden" id="search-loading-spinner" style="margin-left:28px">
+        <i class="ph ph-spinner spin-anim"></i> Searching...
+      </div>
+      <div id="search-content-wrapper" style="padding: 16px 0; display: flex; flex-direction: column; gap: 32px;"></div>
+      <div class="empty-state hidden" id="search-empty"><i class="ph ph-magnifying-glass"></i><p>No results found</p><span>Try exploring different keywords</span></div>
+    </section>
+
+    <!-- Liked -->
+    <section class="view view--liked hidden" id="view-liked">
+      <div class="view-header">
+        <h2 class="view-title"><i class="ph-fill ph-heart"></i> Liked Songs</h2>
+        <p class="view-subtitle">Your personal collection</p>
+      </div>
+      <div class="liked-songs-grid" id="liked-songs-grid"></div>
+      <div class="empty-state hidden" id="liked-empty"><i class="ph ph-heart-break"></i><p>No liked songs yet</p><span>Tap ♡ on any song to save it here</span></div>
+    </section>
+
+    <!-- Playlists -->
+    <section class="view view--playlists hidden" id="view-playlists">
+      <div class="view-header" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <div>
+          <h2 class="view-title"><i class="ph ph-playlist"></i> My Playlists</h2>
+          <p class="view-subtitle">Your curated collections</p>
+        </div>
+        <button class="import-trigger-btn" id="btn-import-playlist" title="Import Playlist from JSON/Text">
+          <i class="ph ph-upload-simple"></i> Import
+        </button>
+      </div>
+      <div class="playlists-container" id="playlists-container" style="padding: 16px 28px;"></div>
+      <div class="empty-state hidden" id="playlists-empty"><i class="ph ph-list-plus"></i><p>No playlists created</p><span>Tap + on any song to create a playlist</span></div>
+    </section>
+
+    <!-- History -->
+    <section class="view view--history hidden" id="view-history">
+      <div class="view-header">
+        <h2 class="view-title"><i class="ph ph-clock-counter-clockwise"></i> Recently Played</h2>
+        <p class="view-subtitle">Your last 10 tracks</p>
+      </div>
+      <div class="history-grid" id="history-grid"></div>
+      <div class="empty-state hidden" id="history-empty"><i class="ph ph-music-note"></i><p>Nothing here yet</p><span>Play something to start your history</span></div>
+    </section>
+
+    <!-- Detail (Artist / Album) -->
+    <section class="view view--detail hidden" id="view-detail">
+      <div class="detail-header">
+        <button class="detail-back-btn" id="detail-back-btn" aria-label="Go Back"><i class="ph ph-arrow-left"></i></button>
+        <div class="detail-header-content">
+          <div class="detail-art-wrap">
+            <img class="detail-art" id="detail-art" src="" alt="Cover" />
+          </div>
+          <div class="detail-info">
+            <span class="detail-type" id="detail-type">Album</span>
+            <h2 class="detail-title" id="detail-title">Title</h2>
+            <p class="detail-subtitle" id="detail-subtitle"></p>
+            <button class="nav-btn detail-play-all" id="detail-play-all">
+              <i class="ph-fill ph-play"></i> Play All
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="search-results-grid" id="detail-grid"></div>
+      <div class="search-spinner hidden" id="detail-loading">
+        <i class="ph ph-spinner spin-anim"></i> Loading...
+      </div>
+    </section>
+  </main>
+
+  <!-- Now Playing Fullscreen Overlay -->
+  <div class="np-overlay hidden" id="np-overlay">
+    <div class="np-bg" id="np-bg"></div>
+    <canvas class="np-visualizer" id="np-visualizer"></canvas>
+    <div class="np-content">
+      <div class="np-art-wrap">
+        <img class="np-art" id="np-art" src="" alt="Album Art" />
+        <div class="np-vinyl"></div>
+      </div>
+      <div class="np-info">
+        <h2 class="np-title" id="np-title">—</h2>
+        <p class="np-artist" id="np-artist">—</p>
+      </div>
+      <div class="np-progress">
+        <input type="range" class="np-seek" id="np-seek" min="0" max="100" value="0" step="0.1" />
+        <div class="np-times">
+          <span id="np-time-current">0:00</span>
+          <span id="np-time-duration">0:00</span>
+        </div>
+      </div>
+      <div class="np-controls">
+        <button class="np-btn" id="np-shuffle" title="Shuffle"><i class="ph ph-shuffle"></i></button>
+        <button class="np-btn" id="np-prev"><i class="ph-fill ph-skip-back"></i></button>
+        <button class="np-btn" id="np-rewind" title="Rewind 10s"><i class="ph-bold ph-subtract" style="font-size:0.8em;margin-right:2px"></i><span style="font-size:0.7em;font-weight:bold">10</span></button>
+        <button class="np-btn np-btn--play" id="np-play"><i class="ph-fill ph-play" id="np-play-icon"></i></button>
+        <button class="np-btn" id="np-forward" title="Forward 10s"><i class="ph-bold ph-plus" style="font-size:0.8em;margin-right:2px"></i><span style="font-size:0.7em;font-weight:bold">10</span></button>
+        <button class="np-btn" id="np-next"><i class="ph-fill ph-skip-forward"></i></button>
+        <button class="np-btn" id="np-repeat" title="Repeat"><i class="ph ph-repeat"></i></button>
+        <button class="np-btn" id="np-share-btn" title="Share"><i class="ph ph-share-network"></i></button>
+        <button class="np-btn" id="np-lyrics-btn" title="Lyrics"><i class="ph ph-text-align-center"></i></button>
+        <button class="np-btn" id="np-spatial-btn" title="Spatial Audio"><i class="ph ph-broadcast"></i></button>
+        <button class="np-btn" id="np-minimize" title="Minimize"><i class="ph ph-arrows-in-simple"></i></button>
+      </div>
+    </div>
+    
+    <!-- Lyrics Panel inside NP Layer -->
+    <div class="np-lyrics-panel hidden" id="np-lyrics-panel">
+      <button class="np-lyrics-close" id="np-lyrics-close"><i class="ph ph-x"></i></button>
+      <div class="np-lyrics-content" id="np-lyrics-content"></div>
+    </div>
+  </div>
+
+  <!-- Queue Panel -->
+  <div class="queue-panel hidden" id="queue-panel">
+    <div class="queue-header">
+      <h3>Queue</h3>
+      <button class="queue-close" id="queue-close"><i class="ph ph-x"></i></button>
+    </div>
+    <div class="queue-list" id="queue-list"></div>
+  </div>
+
+  <!-- Playlists Modal -->
+  <div class="modal-overlay hidden" id="playlist-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3><i class="ph ph-playlist"></i> Add to Playlist</h3>
+        <button class="modal-close" id="playlist-close"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="playlist-create">
+          <input type="text" id="playlist-new-input" placeholder="New playlist name..." autocomplete="off" />
+          <button id="playlist-new-btn"><i class="ph-bold ph-plus"></i></button>
+        </div>
+        <div class="playlist-list" id="playlist-list">
+          <!-- Playlists injected here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Playlist Modal -->
+  <div class="modal-overlay hidden" id="import-modal">
+    <div class="modal import-modal">
+      <div class="modal-header">
+        <h3><i class="ph ph-upload-simple"></i> Import Playlist</h3>
+        <button class="modal-close" id="import-close"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="import-name-row">
+          <input type="text" id="import-name-input" placeholder="Playlist name..." autocomplete="off" />
+        </div>
+        <div class="import-tabs">
+          <button class="import-tab active" data-tab="json"><i class="ph ph-code"></i> JSON</button>
+          <button class="import-tab" data-tab="text"><i class="ph ph-text-aa"></i> Text</button>
+          <button class="import-tab" data-tab="csv"><i class="ph ph-file-csv"></i> CSV</button>
+        </div>
+        <div class="import-tab-content" id="import-tab-json">
+          <p class="import-hint">Paste a JSON array of songs. Accepted formats:</p>
+          <pre class="import-example">[{"name": "Song Title", "artist": "Artist Name"}, ...]</pre>
+          <textarea id="import-json-input" class="import-textarea" rows="8" placeholder='[&#10;  {"name": "Blinding Lights", "artist": "The Weeknd"},&#10;  {"name": "Starboy", "artist": "The Weeknd"}&#10;]' spellcheck="false"></textarea>
+        </div>
+        <div class="import-tab-content hidden" id="import-tab-text">
+          <p class="import-hint">One song per line: <code>Song Title - Artist Name</code></p>
+          <textarea id="import-text-input" class="import-textarea" rows="8" placeholder="Blinding Lights - The Weeknd&#10;Starboy - The Weeknd&#10;Shape of You - Ed Sheeran" spellcheck="false"></textarea>
+        </div>
+        <div class="import-tab-content hidden" id="import-tab-csv">
+          <p class="import-hint">Upload a CSV from <a href="https://exportify.net" target="_blank" rel="noopener">Exportify</a> or any CSV with <code>Track Name</code> and <code>Artist Name(s)</code> columns.</p>
+          <div class="import-csv-drop" id="import-csv-drop">
+            <i class="ph ph-file-arrow-up"></i>
+            <p>Drop CSV file here or click to browse</p>
+            <span id="csv-file-name"></span>
+            <input type="file" id="import-csv-file" accept=".csv,.txt" hidden />
+          </div>
+        </div>
+
+        <!-- Help Guide -->
+        <details class="import-help" id="import-help">
+          <summary class="import-help-toggle"><i class="ph ph-question"></i> How to get songs from Spotify</summary>
+          <div class="import-help-body">
+            <div class="import-help-method">
+              <h4><i class="ph ph-terminal"></i> Quick — Browser Console</h4>
+              <ol>
+                <li>Open your playlist on <a href="https://open.spotify.com" target="_blank" rel="noopener">open.spotify.com</a></li>
+                <li>Scroll all the way down to load every song</li>
+                <li>Press <kbd>F12</kbd> then go to <strong>Console</strong> tab</li>
+                <li>Paste this script and hit Enter:</li>
+              </ol>
+              <div class="import-script-wrap">
+                <pre class="import-script" id="spotify-script">const rows=document.querySelectorAll('[data-testid="tracklist-row"]');const songs=[...rows].map(r=>{const n=r.querySelector('[data-testid="internal-track-link"] div')?.innerText||'';const a=r.querySelector('span a[href*="/artist/"]')?.innerText||'';return{name:n,artist:a}}).filter(s=>s.name);copy(JSON.stringify(songs,null,2));console.log(songs.length+' songs copied!');</pre>
+                <button class="import-copy-btn" id="copy-spotify-script" title="Copy Script"><i class="ph ph-copy"></i></button>
+              </div>
+              <p class="import-help-note">Songs are auto-copied to clipboard. Paste in the JSON tab!</p>
+            </div>
+            <div class="import-help-divider"></div>
+            <div class="import-help-method">
+              <h4><i class="ph ph-globe"></i> Easy — Use Exportify</h4>
+              <ol>
+                <li>Go to <a href="https://exportify.net" target="_blank" rel="noopener">exportify.net</a></li>
+                <li>Login with your Spotify account</li>
+                <li>Export your playlist as CSV</li>
+                <li>Upload the CSV file in the <strong>CSV</strong> tab above</li>
+              </ol>
+            </div>
+          </div>
+        </details>
+        <div class="import-progress hidden" id="import-progress">
+          <div class="import-progress-bar"><div class="import-progress-fill" id="import-progress-fill"></div></div>
+          <span class="import-progress-text" id="import-progress-text">Searching 0/0...</span>
+        </div>
+        <div class="import-actions">
+          <button class="import-btn" id="import-start-btn"><i class="ph ph-magnifying-glass"></i> Search & Import</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Player More Menu (Mobile) -->
+  <div class="player-more-menu hidden" id="player-more-menu">
+    <button class="menu-item" id="menu-like"><i class="ph ph-heart" id="menu-like-icon"></i> Like</button>
+    <button class="menu-item" id="menu-playlist"><i class="ph ph-list-plus"></i> Add to Playlist</button>
+    <button class="menu-item" id="menu-share"><i class="ph ph-share-network"></i> Share</button>
+    <button class="menu-item" id="menu-dl"><i class="ph ph-download-simple"></i> Download</button>
+    <button class="menu-item" id="menu-queue"><i class="ph ph-queue"></i> Queue</button>
+    <button class="menu-item" id="menu-expand"><i class="ph ph-arrows-out-simple"></i> Fullscreen</button>
+    <button class="menu-item" id="menu-shuffle"><i class="ph ph-shuffle" id="menu-shuffle-icon"></i> Shuffle</button>
+    <button class="menu-item" id="menu-repeat"><i class="ph ph-repeat" id="menu-repeat-icon"></i> Repeat</button>
+    <div class="menu-item menu-volume" style="cursor: default;">
+      <i class="ph-fill ph-speaker-high" id="menu-vol-icon"></i>
+      <input type="range" class="volume-slider menu-vol-slider" id="menu-vol-slider" min="0" max="1" step="0.01" value="0.7" style="margin-left: 8px; flex: 1;" aria-label="Volume" />
+    </div>
+    <div class="menu-divider"></div>
+    <button class="menu-item" id="menu-hifi"><i class="ph ph-wave-sine" id="menu-hifi-icon"></i> Hi-Fi <span class="menu-badge hifi-menu-badge" id="menu-hifi-badge">320k</span></button>
+    <button class="menu-item" id="menu-spatial"><i class="ph ph-broadcast" id="menu-spatial-icon"></i> Spatial Audio</button>
+    <div class="menu-divider"></div>
+    <div class="menu-label">Spatial Mode</div>
+    <div class="menu-sleep-row" id="menu-spatial-modes">
+      <button class="sleep-chip spatial-mode-chip active" data-mode="normal">Normal</button>
+      <button class="sleep-chip spatial-mode-chip" data-mode="concert">Concert</button>
+      <button class="sleep-chip spatial-mode-chip" data-mode="hall">Hall</button>
+      <button class="sleep-chip spatial-mode-chip" data-mode="cave">Cave</button>
+      <button class="sleep-chip spatial-mode-chip" data-mode="echo">Echo</button>
+    </div>
+    <div class="menu-divider"></div>
+    <div class="menu-label">Sleep Timer</div>
+    <div class="menu-sleep-row" id="menu-sleep-row">
+      <button class="sleep-chip" data-min="15">15m</button>
+      <button class="sleep-chip" data-min="30">30m</button>
+      <button class="sleep-chip" data-min="45">45m</button>
+      <button class="sleep-chip" data-min="60">1h</button>
+      <button class="sleep-chip sleep-chip--off hidden" id="sleep-off" data-min="0"><i class="ph ph-x"></i></button>
+    </div>
+    <span class="sleep-status hidden" id="sleep-status"></span>
+  </div>
+
+  <!-- Player Bar -->
+  <footer class="player-bar" id="player-bar">
+    <div class="player-bar__progress-wrap" id="progress-wrap">
+      <div class="player-bar__progress" id="progress-bar"></div>
+      <div class="player-bar__buffered" id="buffered-bar"></div>
+      <input type="range" class="player-bar__seek" id="seek-slider" min="0" max="100" value="0" step="0.1" aria-label="Seek" />
+    </div>
+    <div class="player-bar__inner">
+      <div class="player-bar__info" id="player-info">
+        <div class="player-bar__art-wrap" id="player-art-wrap">
+          <img class="player-bar__art" id="player-art"
+            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect width='56' height='56' fill='%23181822'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' fill='%23444' font-size='22'%3E♫%3C/text%3E%3C/svg%3E"
+            alt="Art" />
+          <div class="vinyl-ring" id="vinyl-ring"></div>
+        </div>
+        <div class="player-bar__text">
+          <span class="player-bar__song" id="player-song">Pick a song</span>
+          <span class="player-bar__artist" id="player-artist">—</span>
+        </div>
+        <button class="player-bar__action-btn" id="player-like-btn" title="Like"><i class="ph ph-heart" id="player-like-icon"></i></button>
+        <button class="player-bar__action-btn" id="player-playlist-btn" title="Add to Playlist"><i class="ph ph-list-plus"></i></button>
+        <button class="player-bar__action-btn" id="player-share-btn" title="Share"><i class="ph ph-share-network"></i></button>
+        <button class="player-bar__action-btn" id="player-dl-btn" title="Download"><i class="ph ph-download-simple" id="player-dl-icon"></i></button>
+      </div>
+      <div class="player-bar__controls">
+        <button class="ctrl-btn ctrl-btn--sm" id="btn-shuffle" title="Shuffle"><i class="ph ph-shuffle" id="shuffle-icon"></i></button>
+        <button class="ctrl-btn" id="btn-prev" title="Previous"><i class="ph-fill ph-skip-back"></i></button>
+        <button class="ctrl-btn hide-mobile" id="btn-rewind" title="Rewind 10s" style="display:flex;align-items:center;opacity:0.8"><i class="ph-bold ph-subtract" style="font-size:0.8em;margin-right:2px"></i><span style="font-size:0.65em;font-weight:bold">10</span></button>
+        <button class="ctrl-btn ctrl-btn--play" id="btn-play" title="Play"><i class="ph-fill ph-play" id="play-icon"></i></button>
+        <button class="ctrl-btn hide-mobile" id="btn-forward" title="Forward 10s" style="display:flex;align-items:center;opacity:0.8"><i class="ph-bold ph-plus" style="font-size:0.8em;margin-right:2px"></i><span style="font-size:0.65em;font-weight:bold">10</span></button>
+        <button class="ctrl-btn" id="btn-next" title="Next"><i class="ph-fill ph-skip-forward"></i></button>
+        <button class="ctrl-btn ctrl-btn--sm" id="btn-repeat" title="Repeat"><i class="ph ph-repeat" id="repeat-icon"></i></button>
+      </div>
+      <div class="player-bar__right">
+        <button class="ctrl-btn ctrl-btn--sm" id="btn-queue" title="Queue"><i class="ph ph-queue"></i></button>
+        <button class="ctrl-btn ctrl-btn--sm" id="btn-expand" title="Now Playing"><i class="ph ph-arrows-out-simple"></i></button>
+        <button class="ctrl-btn ctrl-btn--sm player-bar__more-btn" id="btn-more-options" title="More Options"><i class="ph ph-dots-three-vertical"></i></button>
+        <span class="player-bar__time" id="player-time">0:00 / 0:00</span>
+        <div class="player-bar__volume">
+          <button class="ctrl-btn ctrl-btn--vol" id="btn-mute" title="Mute"><i class="ph-fill ph-speaker-high" id="volume-icon"></i></button>
+          <input type="range" class="volume-slider" id="volume-slider" min="0" max="1" step="0.01" value="0.7" aria-label="Volume" />
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Credit & Scroll-to-top -->
+  <div class="credit-badge">Made by <strong>Ajisth</strong></div>
+  <button class="scroll-top hidden" id="scroll-top" aria-label="Scroll to top"><i class="ph ph-caret-up"></i></button>
+
+  <!-- Settings Panel -->
+  <div class="settings-panel hidden" id="settings-panel">
+    <div class="settings-header">
+      <h3><i class="ph ph-gear-six"></i> Settings</h3>
+      <button class="settings-close" id="settings-close"><i class="ph ph-x"></i></button>
+    </div>
+    <div class="settings-body">
+
+      <!-- Theme -->
+      <div class="settings-section">
+        <div class="settings-label"><i class="ph ph-palette"></i> Theme</div>
+        <div class="theme-grid" id="theme-grid">
+          <button class="theme-btn active" data-theme="dark"><span class="theme-swatch" style="background:#0a0a12"></span>Dark</button>
+          <button class="theme-btn" data-theme="amoled"><span class="theme-swatch" style="background:#000"></span>AMOLED</button>
+          <button class="theme-btn" data-theme="midnight"><span class="theme-swatch" style="background:#0d1b2a"></span>Midnight</button>
+          <button class="theme-btn" data-theme="purple"><span class="theme-swatch" style="background:#1a0a2e"></span>Purple Haze</button>
+          <button class="theme-btn" data-theme="sunset"><span class="theme-swatch" style="background:#1a1008"></span>Sunset</button>
+        </div>
+      </div>
+
+      <!-- Visualizer -->
+      <div class="settings-section">
+        <div class="settings-label"><i class="ph ph-waveform"></i> Audio Visualizer</div>
+        <div class="settings-row">
+          <span>Enabled</span>
+          <label class="toggle-switch"><input type="checkbox" id="vis-toggle" checked /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="settings-row">
+          <span>Mode</span>
+          <div class="custom-select" id="vis-mode-select" data-value="bars">
+            <div class="custom-select__trigger"><span>Bars</span><i class="ph ph-caret-down"></i></div>
+            <div class="custom-select__options">
+              <div class="custom-select__option active" data-val="bars">Bars</div>
+              <div class="custom-select__option" data-val="wave">Wave</div>
+              <div class="custom-select__option" data-val="circle">Circle</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Equalizer -->
+      <div class="settings-section">
+        <div class="settings-label"><i class="ph ph-sliders-horizontal"></i> Equalizer</div>
+        <div class="settings-row">
+          <span>Preset</span>
+          <div class="custom-select" id="eq-preset-select" data-value="Flat">
+            <div class="custom-select__trigger"><span>Flat</span><i class="ph ph-caret-down"></i></div>
+            <div class="custom-select__options">
+              <div class="custom-select__option active" data-val="Flat">Flat</div>
+              <div class="custom-select__option" data-val="Bass Boost">Bass Boost</div>
+              <div class="custom-select__option" data-val="Treble Boost">Treble Boost</div>
+              <div class="custom-select__option" data-val="Vocal">Vocal</div>
+              <div class="custom-select__option" data-val="Rock">Rock</div>
+              <div class="custom-select__option" data-val="Pop">Pop</div>
+              <div class="custom-select__option" data-val="Jazz">Jazz</div>
+              <div class="custom-select__option" data-val="Classical">Classical</div>
+              <div class="custom-select__option" data-val="Dance/EDM">Dance/EDM</div>
+              <div class="custom-select__option" data-val="Hip-Hop">Hip-Hop</div>
+              <div class="custom-select__option" data-val="Acoustic">Acoustic</div>
+              <div class="custom-select__option" data-val="Deep Bass">Deep Bass</div>
+              <div class="custom-select__option" data-val="Custom">Custom</div>
+            </div>
+          </div>
+        </div>
+        <div class="eq-sliders" id="eq-sliders">
+          <div class="eq-band"><label>60</label><input type="range" class="eq-range" data-band="0" min="-12" max="12" step="1" value="0" orient="vertical" /><span class="eq-val">0</span></div>
+          <div class="eq-band"><label>230</label><input type="range" class="eq-range" data-band="1" min="-12" max="12" step="1" value="0" orient="vertical" /><span class="eq-val">0</span></div>
+          <div class="eq-band"><label>910</label><input type="range" class="eq-range" data-band="2" min="-12" max="12" step="1" value="0" orient="vertical" /><span class="eq-val">0</span></div>
+          <div class="eq-band"><label>3.6k</label><input type="range" class="eq-range" data-band="3" min="-12" max="12" step="1" value="0" orient="vertical" /><span class="eq-val">0</span></div>
+          <div class="eq-band"><label>14k</label><input type="range" class="eq-range" data-band="4" min="-12" max="12" step="1" value="0" orient="vertical" /><span class="eq-val">0</span></div>
+        </div>
+      </div>
+
+      <!-- Crossfade -->
+      <div class="settings-section">
+        <div class="settings-label"><i class="ph ph-intersect"></i> Crossfade</div>
+        <div class="settings-row">
+          <span>Enabled</span>
+          <label class="toggle-switch"><input type="checkbox" id="crossfade-toggle" /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="settings-row">
+          <span>Duration</span>
+          <div class="range-with-val"><input type="range" id="crossfade-dur" min="1" max="12" step="1" value="5" class="settings-range" /><span id="crossfade-dur-val">5s</span></div>
+        </div>
+      </div>
+
+      <!-- Gapless -->
+      <div class="settings-section">
+        <div class="settings-label"><i class="ph ph-link-simple"></i> Gapless Playback</div>
+        <div class="settings-row">
+          <span>Enabled</span>
+          <label class="toggle-switch"><input type="checkbox" id="gapless-toggle" /><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+
+      <!-- Spatial Audio -->
+      <div class="settings-section">
+        <div class="settings-label"><i class="ph ph-broadcast"></i> Spatial Audio <span class="settings-badge">3D</span></div>
+        <div class="settings-row">
+          <span>HRTF 3D Sound</span>
+          <label class="toggle-switch"><input type="checkbox" id="spatial-toggle" /><span class="toggle-slider"></span></label>
+        </div>
+        <div class="settings-row" style="margin-top:8px;">
+          <span>Mode</span>
+          <div class="custom-select" id="spatial-mode-select">
+            <div class="custom-select__trigger"><span>Normal</span><i class="ph ph-caret-down"></i></div>
+            <div class="custom-select__options">
+              <div class="custom-select__option active" data-value="normal">Normal</div>
+              <div class="custom-select__option" data-value="concert">Concert Hall</div>
+              <div class="custom-select__option" data-value="hall">Large Hall</div>
+              <div class="custom-select__option" data-value="cave">Cave</div>
+              <div class="custom-select__option" data-value="echo">Echo</div>
+              <div class="custom-select__option" data-value="cathedral">Cathedral</div>
+              <div class="custom-select__option" data-value="studio">Studio</div>
+            </div>
+          </div>
+        </div>
+        <p class="settings-hint">Wraps sound around your head using HRTF. Pick a reverb mode for immersive listening.</p>
+      </div>
+
+      <!-- Hi-Fi Mode -->
+      <div class="settings-section">
+        <div class="settings-label"><i class="ph ph-wave-sine"></i> Hi-Fi Mode <span class="settings-badge hifi-badge">320k</span></div>
+        <div class="settings-row">
+          <span>Always 320kbps</span>
+          <label class="toggle-switch"><input type="checkbox" id="hifi-toggle" /><span class="toggle-slider"></span></label>
+        </div>
+        <p class="settings-hint">Streams audio at the highest available bitrate for lossless-grade quality.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Confirm Dialog (replaces native confirm() blocked by Chrome) -->
+  <div class="modal-overlay hidden" id="confirm-modal">
+    <div class="modal confirm-dialog">
+      <div class="confirm-dialog__icon"><i class="ph ph-warning-circle"></i></div>
+      <h3 class="confirm-dialog__title" id="confirm-title">Are you sure?</h3>
+      <p class="confirm-dialog__message" id="confirm-message">This action cannot be undone.</p>
+      <div class="confirm-dialog__actions">
+        <button class="confirm-dialog__btn confirm-dialog__btn--cancel" id="confirm-cancel">Cancel</button>
+        <button class="confirm-dialog__btn confirm-dialog__btn--confirm" id="confirm-ok">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+  <script type="module" src="main.js"></script>
+</body>
+</html>
