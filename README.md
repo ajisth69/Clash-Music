@@ -1,6 +1,4 @@
-<div align="center">
-  <img src="https://upload.wikimedia.org/wikipedia/commons/e/e3/Headphones_icon.png" width="120" alt="Headphones Logo">
-  <h1>Clash Musics</h1>
+ <h1>Clash Musics</h1>
   <p><strong>Because listening to music shouldn't feel like a compromise.</strong></p>
   <p>Imagine if your favorite music app actually cared about audio quality. That's Clash Musics. We stripped out all the bloat and built a lightning-fast, premium web player powered by a true Node.js backend. Get ready to experience studio-grade 320kbps audio, massive hardware-level EQ boosts, and 3D spatial reverb modes that put you right inside the concert hall.</p>
 
