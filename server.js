@@ -170,7 +170,8 @@ const server = http.createServer((req, res) => {
   const filePath = path.join(__dirname, reqPath);
 
   // Security: check if file is within directory to prevent path traversal
-  if (!filePath.startsWith(__dirname)) {
+  const expectedDir = path.join(__dirname, path.sep);
+  if (!filePath.startsWith(expectedDir)) {
     res.writeHead(403, { ...CORS_HEADERS, 'Content-Type': 'text/plain' });
     res.end('Forbidden');
     return;
