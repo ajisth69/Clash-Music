@@ -26,11 +26,6 @@ async function apiFetch(path, timeoutMs = 15000) {
 
 // lowest level fetch — removed, apiFetch handles it all now
 
-// public helper — no longer needed since backend handles CORS
-function buildUrl(url) {
-  return url;
-}
-
 // normalize the raw API response into a consistent shape
 function normaliseSong(raw) {
   if (!raw) return null;
@@ -106,9 +101,6 @@ export function getActiveEndpoint() {
   return API_BASE;
 }
 
-// exported so ui.js can proxy stream/download URLs through the same CORS proxy
-export { buildUrl as proxyUrl };
-
 export async function searchAll(query, limit = 10) {
   if (!query?.trim()) return null;
   const encoded = encodeURIComponent(query);
@@ -148,7 +140,7 @@ export async function getLyrics(songId, trackName = '', artistName = '', albumNa
       if (albumName) url += `&album_name=${encodeURIComponent(albumName)}`;
       if (duration) url += `&duration=${Math.round(duration)}`;
 
-      const res = await fetch(buildUrl(url));
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         if (data) {
