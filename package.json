@@ -3,11 +3,10 @@
   "version": "2.0.0",
   "description": "Clash Musics Hi-Fi Proxy Server",
   "main": "server.js",
-  "type": "module",
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+    "test": "node --test && jest"
   },
   "engines": {
     "node": ">=16"
@@ -19,8 +18,23 @@
   ],
   "author": "Ajisth",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ajisth69/Clash-Music.git"
+  },
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ajisth69/Clash-Music/issues"
+  },
+  "homepage": "https://github.com/ajisth69/Clash-Music#readme",
+  "dependencies": {
+    "playwright": "^1.60.0"
+  },
   "devDependencies": {
-    "@jest/globals": "^30.4.1",
-    "jest": "^30.4.2"
+    "@babel/core": "^7.29.0",
+    "@babel/preset-env": "^7.29.5",
+    "babel-jest": "^30.4.1",
+    "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1"
   }
 }
