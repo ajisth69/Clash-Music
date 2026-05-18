@@ -5,6 +5,7 @@
 
 import * as Storage from './storage.js';
 import * as Vis     from './visualizer.js';
+import { hifiDSP }  from './tone-hifi.js';
 
 const audio  = new Audio();
 const audio2 = new Audio();
@@ -54,8 +55,7 @@ function tryInitVisualizer() {
 function buildStreamUrl(song) {
   if (!song?.streamUrl) return '';
   if (Storage.getHiFiMode()) {
-    // Rely on local server or Vercel route
-    return `/stream?url=${encodeURIComponent(song.streamUrl)}`;
+    return `/api/proxy-stream?url=${encodeURIComponent(song.streamUrl)}`;
   }
   return song.streamUrl;
 }
@@ -97,7 +97,19 @@ export function playSong(song, list = [], idx = 0) {
   playStartTime = Date.now();
   playStartPos  = 0;
 
-  activeAudio.src = buildStreamUrl(song);
+  const url = buildStreamUrl(song);
+
+  if (Storage.getHiFiMode()) {
+      hifiDSP.playStream(url);
+      activeAudio.src = url;
+      activeAudio.muted = true; // prevent double playback
+  } else {
+      if (hifiDSP.player) {
+          hifiDSP.player.stop();
+      }
+      activeAudio.src = url;
+      activeAudio.muted = false;
+  }
 
   Storage.saveLastPlayed(song);
   Storage.saveQueue(playlist, currentIdx);
@@ -129,7 +141,19 @@ function doCrossfade(song, list, idx, duration) {
   const outgoing = activeAudio;
   const incoming = (outgoing === audio) ? audio2 : audio;
 
-  incoming.src    = buildStreamUrl(song);
+  const url = buildStreamUrl(song);
+
+  if (Storage.getHiFiMode()) {
+    hifiDSP.playStream(url);
+    incoming.muted = true;
+  } else {
+    if (hifiDSP.player) {
+        hifiDSP.player.stop();
+    }
+    incoming.muted = false;
+  }
+
+  incoming.src    = url;
   incoming.volume = 0;
   incoming.currentTime = 0;
 
@@ -187,6 +211,27 @@ function preloadNext(list, idx) {
 export function toggle() {
   if (!currentSong) return;
   Vis.resumeContext();
+
+  if (Storage.getHiFiMode() && hifiDSP.player) {
+    activeAudio.muted = true;
+    if (hifiDSP.player.state === "stopped") {
+      hifiDSP.player.start();
+      emit('play');
+    } else {
+      hifiDSP.player.stop();
+      emit('pause');
+    }
+    // Also sync the fallback html5 audio
+    if (activeAudio.paused) activeAudio.play().catch(()=>{}).then(()=>emit('play'));
+    else activeAudio.pause();
+    return;
+  }
+
+  if (hifiDSP.player && hifiDSP.player.state !== "stopped") {
+     hifiDSP.player.stop();
+  }
+  activeAudio.muted = false;
+
   if (activeAudio.paused) {
     playStartPos = activeAudio.currentTime;
     activeAudio.play().then(() => emit('play')).catch(() => emit('pause'));
@@ -199,14 +244,26 @@ export function toggle() {
 
 export function reloadHiFiStream() {
   if (!currentSong) return;
+  const url = buildStreamUrl(currentSong);
+
+  if (Storage.getHiFiMode()) {
+      hifiDSP.playStream(url);
+      activeAudio.muted = true;
+  } else {
+      if (hifiDSP.player) hifiDSP.player.stop();
+      activeAudio.muted = false;
+  }
+
   const wasPaused = activeAudio.paused;
   const time = activeAudio.currentTime;
-  activeAudio.src = buildStreamUrl(currentSong);
+  activeAudio.src = url;
 
   // Wait for metadata to load before setting currentTime to prevent errors
   const onLoadedMetadata = () => {
     activeAudio.currentTime = time;
-    if (!wasPaused) {
+    if (!wasPaused && !Storage.getHiFiMode()) {
+      activeAudio.play().catch(e => console.warn('[Player] HiFi Reload failed', e));
+    } else if (!wasPaused && Storage.getHiFiMode()) {
       activeAudio.play().catch(e => console.warn('[Player] HiFi Reload failed', e));
     }
     activeAudio.removeEventListener('loadedmetadata', onLoadedMetadata);
@@ -216,7 +273,14 @@ export function reloadHiFiStream() {
   activeAudio.load();
 }
 
-export function pause() { logCurrentCompletion(); activeAudio.pause(); emit('pause'); }
+export function pause() {
+  logCurrentCompletion();
+  if (Storage.getHiFiMode() && hifiDSP.player) {
+    hifiDSP.player.stop();
+  }
+  activeAudio.pause();
+  emit('pause');
+}
 
 export function next() {
   if (!playlist.length) return;

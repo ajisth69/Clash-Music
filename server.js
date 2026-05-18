@@ -120,6 +120,21 @@ const server = http.createServer((req, res) => {
   // Full API Proxy — /api/*
   // Proxies all frontend API requests through this Node.js backend to avoid CORS and frontend fragility
   let reqPath = parsed.pathname;
+  if (reqPath === '/api/proxy-stream') {
+    req.query = parsed.query;
+    // We import and execute the proxy route handler directly in local mode
+    const handler = require('./api/proxy-stream.js').default || require('./api/proxy-stream.js');
+
+    // Polyfill res.status and res.json for Express-like API used in serverless functions
+    res.status = (code) => { res.statusCode = code; return res; };
+    res.json = (data) => {
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify(data));
+    };
+
+    handler(req, res);
+    return;
+  }
   if (reqPath.startsWith('/api/')) {
     const apiPath = reqPath.replace('/api/', '/');
     const queryString = parsed.search || '';

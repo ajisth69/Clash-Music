@@ -13,9 +13,6 @@ let pannerNode  = null;
 let convolverNode = null;
 let convolverGain = null;
 let dryGain     = null;
-let hifiBassNode = null;
-let hifiTrebleNode = null;
-let hifiLoudnessNode = null;
 let waveshaperNode = null;
 let eqFilters   = [];
 let initialized = false;
@@ -139,29 +136,12 @@ export function initAudio(audioElement) {
       return f;
     });
 
-    // Hi-Fi DSP Enhancer Nodes (Massive Dynamic EQ curve + Loudness)
-    hifiBassNode = audioCtx.createBiquadFilter();
-    hifiBassNode.type = 'lowshelf';
-    hifiBassNode.frequency.value = 110; // 110Hz is perfectly reproduced by phone speakers (punchy mid-bass)
-    hifiBassNode.gain.value = 0; // Toggled later
-
-    hifiTrebleNode = audioCtx.createBiquadFilter();
-    hifiTrebleNode.type = 'highshelf';
-    hifiTrebleNode.frequency.value = 8000; // 8kHz for extreme crispness and air
-    hifiTrebleNode.gain.value = 0;
-
-    hifiLoudnessNode = audioCtx.createGain();
-    hifiLoudnessNode.gain.value = 1.0; // Normal volume
-
     waveshaperNode = audioCtx.createWaveShaper();
     waveshaperNode.curve = null;
     waveshaperNode.oversample = '4x';
 
-    // Chain: source → HiFi Loudness → HiFi Bass → HiFi Treble → Waveshaper → EQ → analyser → gain → destination
-    sourceNode.connect(hifiLoudnessNode);
-    hifiLoudnessNode.connect(hifiBassNode);
-    hifiBassNode.connect(hifiTrebleNode);
-    hifiTrebleNode.connect(waveshaperNode);
+    // Chain: source → Waveshaper → EQ → analyser → gain → destination
+    sourceNode.connect(waveshaperNode);
     let prev = waveshaperNode;
     for (const f of eqFilters) { prev.connect(f); prev = f; }
     prev.connect(analyser);
@@ -225,16 +205,7 @@ export function isCorsBlocked()   { return corsBlocked; }
 
 /* ── Hi-Fi DSP Enhancer ── */
 export function setHiFiDSP(on) {
-  if (!initialized || corsBlocked || !hifiBassNode || !hifiTrebleNode || !hifiLoudnessNode) return;
-  
-  // To make the quality "skyrocket" exactly like a hardware phone enhancer:
-  // 1. Boost volume by +4dB (1.58x multiplier) for perceived loudness jump
-  // 2. Massive +10dB mid-bass punch at 110Hz (perfect for phones)
-  // 3. +8.5dB treble boost at 8kHz for crisp vocals and cymbals
-  
-  hifiLoudnessNode.gain.value = on ? 1.58 : 1.0;
-  hifiBassNode.gain.value = on ? 10.0 : 0;
-  hifiTrebleNode.gain.value = on ? 8.5 : 0;
+  // Deprecated Native Web Audio Implementation. Now handled by tone-hifi.js
 }
 
 /* ── Waveshaper DSP Enhancer ── */

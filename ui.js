@@ -18,6 +18,7 @@ import * as Player  from './player.js';
 import * as Storage from './storage.js';
 import * as Api     from './api.js';
 import * as Vis     from './visualizer.js';
+import { hifiDSP }  from './tone-hifi.js';
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -1422,7 +1423,7 @@ export function initUI() {
       const hifi = !Storage.getHiFiMode();
       Storage.saveHiFiMode(hifi);
       document.body.classList.toggle('hifi-active', hifi);
-      Vis.setHiFiDSP(hifi);
+      if (hifiDSP && !hifi) hifiDSP.toggleEffects();
       Player.reloadHiFiStream();
       if($('#hifi-toggle')) $('#hifi-toggle').checked = hifi;
       showToast(hifi ? 'Hi-Fi 320kbps ON ✓' : 'Hi-Fi off', 'ph ph-wave-sine');

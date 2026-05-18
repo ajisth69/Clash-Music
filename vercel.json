@@ -6,6 +6,10 @@
       "use": "@vercel/node"
     },
     {
+      "src": "api/proxy-stream.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "index.html",
       "use": "@vercel/static"
     },
@@ -15,6 +19,10 @@
     }
   ],
   "routes": [
+    {
+      "src": "/api/proxy-stream",
+      "dest": "/api/proxy-stream.js"
+    },
     {
       "src": "/api/(.*)",
       "dest": "/server.js"
