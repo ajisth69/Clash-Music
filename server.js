@@ -178,7 +178,13 @@ const server = http.createServer((req, res) => {
     reqPath = '/index.html';
   }
 
-  const filePath = path.join(__dirname, reqPath);
+  try {
+    reqPath = decodeURIComponent(reqPath);
+  } catch (err) {
+    // Ignore malformed URI components
+  }
+
+  const filePath = path.resolve(path.join(__dirname, reqPath));
 
   // Security: check if file is within directory to prevent path traversal
   const expectedDir = path.join(__dirname, path.sep);
