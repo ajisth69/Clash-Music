@@ -17,7 +17,6 @@
 import * as Player  from './player.js';
 import * as Storage from './storage.js';
 import * as Api     from './api.js';
-import { proxyUrl }  from './api.js';
 import * as Vis     from './visualizer.js';
 
 const $ = (s) => document.querySelector(s);
@@ -135,7 +134,7 @@ async function downloadSong(song, btn = null) {
   showToast(`Downloading…`, 'ph ph-download-simple');
 
   try {
-    const res = await fetch(proxyUrl(song.streamUrl), { mode: 'cors' });
+    const res = await fetch(song.streamUrl, { mode: 'cors' });
     if (!res.ok) throw 0;
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
@@ -190,7 +189,7 @@ async function bulkDownloadPlaylist(songs, playlistName, btn) {
     const file = `${name} - ${art}.m4a`;
 
     try {
-      const res = await fetch(proxyUrl(song.streamUrl), { mode: 'cors' });
+      const res = await fetch(song.streamUrl, { mode: 'cors' });
       if (!res.ok) throw 0;
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
