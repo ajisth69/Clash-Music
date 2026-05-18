@@ -789,7 +789,7 @@ function renderQueue() {
         <div class="queue-item__title">${decode(song.title)}</div>
         <div class="queue-item__artist">${renderArtistsHtml(song.artists)}</div>
       </div>
-      <button class="queue-item__add-btn" title="Add to Playlist" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; padding: 4px; border-radius: 4px; display: flex; align-items: center; justify-content: center;"><i class="ph ph-list-plus" style="font-size: 1.2rem;"></i></button>
+      <button class="queue-item__add-btn" aria-label="Add to Playlist" title="Add to Playlist" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; padding: 4px; border-radius: 4px; display: flex; align-items: center; justify-content: center;"><i class="ph ph-list-plus" style="font-size: 1.2rem;"></i></button>
     `;
 
     // Drag events
