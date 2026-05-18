@@ -1654,6 +1654,7 @@ body.theme-sunset   { --bg-void:#1a1008; --bg-primary:#1f150c; --bg-elevated:#2a
   margin-left: 6px; display: inline-block; vertical-align: middle;
 }
 .hifi-badge { background: rgba(255,107,157,0.15); color: var(--pink); }
+.warm-badge { background: rgba(255,167,38,0.15); color: #ffa726; }
 
 .hifi-server-input {
   flex: 1; margin-left: 10px; max-width: 140px; padding: 6px 10px;
@@ -1666,8 +1667,15 @@ body.theme-sunset   { --bg-void:#1a1008; --bg-primary:#1f150c; --bg-elevated:#2a
 /* Show HiFi badge on player bar when active */
 body.hifi-active .player-bar__song::after {
   content: 'Hi-Fi'; font-size: 0.55rem; padding: 1px 4px; border-radius: 3px;
-  background: rgba(255,107,157,0.15); color: var(--pink); margin-left: 6px;
-  vertical-align: middle; font-weight: 700;
+  background: rgba(255,107,157,0.25); color: #ff6b9d; margin-left: 6px; /* Enhanced contrast for all themes */
+  vertical-align: middle; font-weight: 800; text-shadow: 0px 1px 2px rgba(0,0,0,0.5); /* Added text shadow for legibility */
+}
+
+/* Add Waveshaper badge next to Hi-Fi or separately */
+body.waveshaper-active .player-bar__song::before {
+  content: 'Warm'; font-size: 0.55rem; padding: 1px 4px; border-radius: 3px;
+  background: rgba(255,167,38,0.25); color: #ffa726; margin-right: 6px;
+  vertical-align: middle; font-weight: 800; text-shadow: 0px 1px 2px rgba(0,0,0,0.5);
 }
 
 /* Spatial Button Animation */
