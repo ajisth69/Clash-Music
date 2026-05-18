@@ -75,9 +75,6 @@ async function boot() {
   Player.restoreState();
   setGreeting();
 
-  // Check Hi-Fi server silently
-  checkHiFiServer();
-
   const endpoint = await API.init();
   if (!endpoint) { UI.showToast('Cannot connect. Check internet.', 'ph ph-wifi-x'); return; }
 
@@ -96,21 +93,6 @@ function setGreeting() {
   else if (h < 17) el.textContent = 'Good afternoon';
   else if (h < 21) el.textContent = 'Good evening ✨';
   else             el.textContent = 'Good night 🌙';
-}
-
-/* ── Check if Hi-Fi server is running ── */
-async function checkHiFiServer() {
-  if (!Storage.getHiFiMode()) return;
-  try {
-    const server = Storage.getHiFiServer();
-    const res = await fetch(`${server}/health`, { signal: AbortSignal.timeout(2000) });
-    if (res.ok) {
-      UI.showToast('Hi-Fi server connected ✓', 'ph ph-music-note');
-      document.body.classList.add('hifi-active');
-    }
-  } catch {
-    /* server not running — silent */
-  }
 }
 
 /* ── Load all category sections ── */

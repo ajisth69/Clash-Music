@@ -13,7 +13,6 @@ let pannerNode  = null;
 let convolverNode = null;
 let convolverGain = null;
 let dryGain     = null;
-let waveshaperNode = null;
 let eqFilters   = [];
 let initialized = false;
 let corsBlocked = false;
@@ -136,13 +135,8 @@ export function initAudio(audioElement) {
       return f;
     });
 
-    waveshaperNode = audioCtx.createWaveShaper();
-    waveshaperNode.curve = null;
-    waveshaperNode.oversample = '4x';
-
-    // Chain: source → Waveshaper → EQ → analyser → gain → destination
-    sourceNode.connect(waveshaperNode);
-    let prev = waveshaperNode;
+    // Chain: source → EQ → analyser → gain → destination
+    let prev = sourceNode;
     for (const f of eqFilters) { prev.connect(f); prev = f; }
     prev.connect(analyser);
     analyser.connect(gainNode);
@@ -157,13 +151,11 @@ export function initAudio(audioElement) {
 
     currentMode = Storage.getVisualizerMode();
 
-    // Restore spatial & hifi settings
+    // Restore spatial settings
     currentSpatialMode = Storage.getSpatialMode() || 'normal';
     if (Storage.getSpatialAudioEnabled()) enableSpatialInternal(true);
-    setHiFiDSP(Storage.getHiFiMode());
-    setWaveshaperDSP(Storage.getWaveshaperMode());
 
-    console.log('[Visualizer] ✓ Web Audio API + HRTF Spatial + Hi-Fi DSP + Waveshaper + Reverb Modes initialized');
+    console.log('[Visualizer] ✓ Web Audio API + HRTF Spatial + Reverb Modes initialized');
     return true;
   } catch (err) {
     console.warn('[Visualizer] Web Audio init failed:', err.message);
@@ -202,44 +194,6 @@ export function setVisualizerMode(m) { currentMode = m; Storage.saveVisualizerMo
 export function getVisualizerMode()  { return currentMode; }
 export function isInitialized()   { return initialized; }
 export function isCorsBlocked()   { return corsBlocked; }
-
-/* ── Hi-Fi DSP Enhancer ── */
-export function setHiFiDSP(on) {
-  // Deprecated Native Web Audio Implementation. Now handled by tone-hifi.js
-}
-
-/* ── Waveshaper DSP Enhancer ── */
-function makeDistortionCurve(amount) {
-  const k = typeof amount === 'number' ? amount : 50,
-    n_samples = 44100,
-    curve = new Float32Array(n_samples),
-    deg = Math.PI / 180;
-
-  let max = 0;
-  for (let i = 0; i < n_samples; ++i) {
-    const x = i * 2 / n_samples - 1;
-    const y = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
-    curve[i] = y;
-    if (Math.abs(y) > max) max = Math.abs(y);
-  }
-
-  // Normalize the curve to prevent volume drop
-  if (max > 0) {
-    for (let i = 0; i < n_samples; ++i) {
-      curve[i] /= max;
-    }
-  }
-
-  return curve;
-}
-
-export function setWaveshaperDSP(on) {
-  if (!initialized || corsBlocked || !waveshaperNode) return;
-
-  // When 'on', add soft clipping and analog warmth.
-  // 400 is a decent amount for audible harmonic distortion and warmth.
-  waveshaperNode.curve = on ? makeDistortionCurve(400) : null;
-}
 
 /* ── Spatial Audio with Modes ── */
 function rebuildSpatialChain() {
