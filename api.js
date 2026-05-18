@@ -132,10 +132,6 @@ export async function searchSongs(query, limit = 20, page = 1) {
   return data.data.results.map(normaliseSong).filter(Boolean);
 }
 
-export async function fetchCategorySongs(query, limit = 15) {
-  return searchSongs(query, limit);
-}
-
 export async function getSongById(id) {
   if (!id) return null;
   const data = await apiFetch(`/songs/${id}`);
