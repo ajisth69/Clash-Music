@@ -167,7 +167,13 @@ const server = http.createServer((req, res) => {
     reqPath = '/index.html';
   }
 
-  const filePath = path.join(__dirname, reqPath);
+  try {
+    reqPath = decodeURIComponent(reqPath);
+  } catch (err) {
+    // Ignore malformed URI components
+  }
+
+  const filePath = path.resolve(path.join(__dirname, reqPath));
 
   // Security: check if file is within directory to prevent path traversal
   if (!filePath.startsWith(__dirname)) {
@@ -201,13 +207,17 @@ const server = http.createServer((req, res) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log('\n🎵  Clash Musics Server Running Locally!');
-  console.log(`✓  Website Available   : http://localhost:${PORT}`);
-  console.log(`✓  Full API Proxy      : http://localhost:${PORT}/api/*`);
-  console.log(`✓  Hi-Fi Stream Proxy  : http://localhost:${PORT}/stream`);
-  console.log(`✓  Hi-Fi 320kbps       : ACTIVE`);
-  console.log(`✓  Range/Seeking       : ACTIVE`);
-  console.log(`✓  CORS Bypass         : ACTIVE`);
-  console.log('\nPress Ctrl+C to terminate the server.\n');
-});
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log('\n🎵  Clash Musics Server Running Locally!');
+    console.log(`✓  Website Available   : http://localhost:${PORT}`);
+    console.log(`✓  Full API Proxy      : http://localhost:${PORT}/api/*`);
+    console.log(`✓  Hi-Fi Stream Proxy  : http://localhost:${PORT}/stream`);
+    console.log(`✓  Hi-Fi 320kbps       : ACTIVE`);
+    console.log(`✓  Range/Seeking       : ACTIVE`);
+    console.log(`✓  CORS Bypass         : ACTIVE`);
+    console.log('\nPress Ctrl+C to terminate the server.\n');
+  });
+}
+
+module.exports = server;
