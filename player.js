@@ -55,7 +55,7 @@ function buildStreamUrl(song) {
   if (!song?.streamUrl) return '';
   if (Storage.getHiFiMode()) {
     // Rely on local server or Vercel route
-    return `/stream?url=${encodeURIComponent(song.streamUrl)}`;
+    return `/api/stream?audioUrl=${encodeURIComponent(song.streamUrl)}`;
   }
   return song.streamUrl;
 }

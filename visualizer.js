@@ -15,8 +15,7 @@ let convolverGain = null;
 let dryGain     = null;
 let hifiBassNode = null;
 let hifiTrebleNode = null;
-let hifiLoudnessNode = null;
-let waveshaperNode = null;
+let hifiCompressorNode = null;
 let eqFilters   = [];
 let initialized = false;
 let corsBlocked = false;
@@ -27,8 +26,6 @@ let canvasCtx   = null;
 
 /* Spatial audio state */
 let spatialEnabled  = false;
-let spatialAngle    = 0;
-let spatialInterval = null;
 let currentSpatialMode = 'normal';
 
 const EQ_BANDS = [60, 230, 910, 3600, 14000];
@@ -139,7 +136,7 @@ export function initAudio(audioElement) {
       return f;
     });
 
-    // Hi-Fi DSP Enhancer Nodes (Massive Dynamic EQ curve + Loudness)
+    // Hi-Fi DSP Enhancer Nodes (Massive Dynamic EQ curve + Compressor)
     hifiBassNode = audioCtx.createBiquadFilter();
     hifiBassNode.type = 'lowshelf';
     hifiBassNode.frequency.value = 110; // 110Hz is perfectly reproduced by phone speakers (punchy mid-bass)
@@ -150,19 +147,20 @@ export function initAudio(audioElement) {
     hifiTrebleNode.frequency.value = 8000; // 8kHz for extreme crispness and air
     hifiTrebleNode.gain.value = 0;
 
-    hifiLoudnessNode = audioCtx.createGain();
-    hifiLoudnessNode.gain.value = 1.0; // Normal volume
+    hifiCompressorNode = audioCtx.createDynamicsCompressor();
+    hifiCompressorNode.threshold.value = -24;
+    hifiCompressorNode.knee.value = 30;
+    hifiCompressorNode.ratio.value = 12;
+    hifiCompressorNode.attack.value = 0.003;
+    hifiCompressorNode.release.value = 0.25;
+    // Set knee and ratio so it's a gentle but strict limit preventing harsh clipping
 
-    waveshaperNode = audioCtx.createWaveShaper();
-    waveshaperNode.curve = null;
-    waveshaperNode.oversample = '4x';
-
-    // Chain: source → HiFi Loudness → HiFi Bass → HiFi Treble → Waveshaper → EQ → analyser → gain → destination
-    sourceNode.connect(hifiLoudnessNode);
-    hifiLoudnessNode.connect(hifiBassNode);
+    // Chain: source → HiFi Bass → HiFi Treble → Compressor → EQ → analyser → gain → destination
+    sourceNode.connect(hifiBassNode);
     hifiBassNode.connect(hifiTrebleNode);
-    hifiTrebleNode.connect(waveshaperNode);
-    let prev = waveshaperNode;
+    hifiTrebleNode.connect(hifiCompressorNode);
+
+    let prev = hifiCompressorNode;
     for (const f of eqFilters) { prev.connect(f); prev = f; }
     prev.connect(analyser);
     analyser.connect(gainNode);
@@ -225,49 +223,22 @@ export function isCorsBlocked()   { return corsBlocked; }
 
 /* ── Hi-Fi DSP Enhancer ── */
 export function setHiFiDSP(on) {
-  if (!initialized || corsBlocked || !hifiBassNode || !hifiTrebleNode || !hifiLoudnessNode) return;
+  if (!initialized || corsBlocked || !hifiBassNode || !hifiTrebleNode || !hifiCompressorNode) return;
   
   // To make the quality "skyrocket" exactly like a hardware phone enhancer:
-  // 1. Boost volume by +4dB (1.58x multiplier) for perceived loudness jump
-  // 2. Massive +10dB mid-bass punch at 110Hz (perfect for phones)
-  // 3. +8.5dB treble boost at 8kHz for crisp vocals and cymbals
+  // 1. Massive +10dB mid-bass punch at 110Hz (perfect for phones)
+  // 2. +8.5dB treble boost at 8kHz for crisp vocals and cymbals
+  // Compressor will automatically normalize volume jump smoothly and prevent clipping.
   
-  hifiLoudnessNode.gain.value = on ? 1.58 : 1.0;
-  hifiBassNode.gain.value = on ? 10.0 : 0;
-  hifiTrebleNode.gain.value = on ? 8.5 : 0;
-}
-
-/* ── Waveshaper DSP Enhancer ── */
-function makeDistortionCurve(amount) {
-  const k = typeof amount === 'number' ? amount : 50,
-    n_samples = 44100,
-    curve = new Float32Array(n_samples),
-    deg = Math.PI / 180;
-
-  let max = 0;
-  for (let i = 0; i < n_samples; ++i) {
-    const x = i * 2 / n_samples - 1;
-    const y = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
-    curve[i] = y;
-    if (Math.abs(y) > max) max = Math.abs(y);
-  }
-
-  // Normalize the curve to prevent volume drop
-  if (max > 0) {
-    for (let i = 0; i < n_samples; ++i) {
-      curve[i] /= max;
-    }
-  }
-
-  return curve;
+  // Set target so we smoothly transition
+  const t = audioCtx.currentTime;
+  hifiBassNode.gain.setTargetAtTime(on ? 10.0 : 0, t, 0.1);
+  hifiTrebleNode.gain.setTargetAtTime(on ? 8.5 : 0, t, 0.1);
 }
 
 export function setWaveshaperDSP(on) {
-  if (!initialized || corsBlocked || !waveshaperNode) return;
-
-  // When 'on', add soft clipping and analog warmth.
-  // 400 is a decent amount for audible harmonic distortion and warmth.
-  waveshaperNode.curve = on ? makeDistortionCurve(400) : null;
+  // Deprecated. Removed waveshaper node as it causes rough clipping and cracking audio.
+  return;
 }
 
 /* ── Spatial Audio with Modes ── */
@@ -313,13 +284,13 @@ function rebuildSpatialChain() {
   dryGain.connect(audioCtx.destination);
   convolverGain.connect(audioCtx.destination);
 
-  startSpatialAnimation();
+  applyMagicalSpatialEffect();
 }
 
 function enableSpatialInternal(on) {
   if (!audioCtx || !pannerNode || !gainNode || corsBlocked) return;
   spatialEnabled = on;
-  if (!on) stopSpatialAnimation();
+  if (!on) removeMagicalSpatialEffect();
   rebuildSpatialChain();
 }
 
@@ -339,28 +310,21 @@ export function getSpatialMode()    { return currentSpatialMode; }
 export function getSpatialModes()   { return SPATIAL_MODES; }
 export function getSpatialEnabled() { return spatialEnabled; }
 
-function startSpatialAnimation() {
-  if (spatialInterval) return;
-  spatialInterval = setInterval(() => {
-    spatialAngle = (spatialAngle + 3.0) % 360;
-    const rad = (spatialAngle * Math.PI) / 180;
-    const x   = Math.sin(rad) * 6;
-    const z   = Math.cos(rad) * 6 - 2;
-    const y   = Math.sin(rad * 2) * 2; // Add vertical movement for true 3D spatial effect
-    if (pannerNode) {
-      if (pannerNode.positionX) {
-        pannerNode.positionX.setTargetAtTime(x, audioCtx.currentTime, 0.1);
-        pannerNode.positionY.setTargetAtTime(y, audioCtx.currentTime, 0.1);
-        pannerNode.positionZ.setTargetAtTime(z, audioCtx.currentTime, 0.1);
-      } else {
-        pannerNode.setPosition(x, y, z);
-      }
+function applyMagicalSpatialEffect() {
+  // Instead of an irritating rotating animation, set the panner node to a wide, magical
+  // stationary configuration that creates an incredibly immersive and smooth stereo expansion.
+  if (pannerNode) {
+    if (pannerNode.positionX) {
+      pannerNode.positionX.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+      pannerNode.positionY.setTargetAtTime(1.5, audioCtx.currentTime, 0.1); // Slightly elevated for "airy" feel
+      pannerNode.positionZ.setTargetAtTime(0.5, audioCtx.currentTime, 0.1); // Pushed slightly into the soundstage
+    } else {
+      pannerNode.setPosition(0, 1.5, 0.5);
     }
-  }, 30);
+  }
 }
 
-function stopSpatialAnimation() {
-  if (spatialInterval) { clearInterval(spatialInterval); spatialInterval = null; }
+function removeMagicalSpatialEffect() {
   if (pannerNode) {
     if (pannerNode.positionX) {
       pannerNode.positionX.value = 0;

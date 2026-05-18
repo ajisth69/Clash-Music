@@ -53,9 +53,9 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Stream proxy — /stream?url=<encoded_url>
-  if (parsed.pathname === '/stream') {
-    const streamUrl = parsed.query.url;
+  // Stream proxy — /api/stream?audioUrl=<encoded_url> or /stream?url=<encoded_url> (legacy)
+  if (parsed.pathname === '/api/stream' || parsed.pathname === '/stream') {
+    const streamUrl = parsed.query.audioUrl || parsed.query.url;
     if (!streamUrl) {
       res.writeHead(400, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Missing url param' }));
@@ -104,6 +104,13 @@ const server = http.createServer((req, res) => {
         upRes.pipe(res);
       }
     );
+
+    // Destroy the upstream request if the client disconnects to save serverless execution time
+    req.on('close', () => {
+      if (upReq && !upReq.destroyed) {
+        upReq.destroy();
+      }
+    });
 
     upReq.on('error', (err) => {
       console.error('[HiFi] Upstream error:', err.message);
