@@ -2039,12 +2039,14 @@ async function runImport() {
   const skippedNames = [];
   let failed = 0;
 
-  for (let i = 0; i < songQueries.length; i++) {
-    const q = songQueries[i];
-    const searchQuery = q.artist ? `${q.name} ${q.artist}` : q.name;
+  let completedCount = 0;
+  const CONCURRENCY_LIMIT = 5;
+  let currentIndex = 0;
+  let activePromises = [];
 
-    textEl.textContent = `Searching ${i + 1}/${songQueries.length}...`;
-    fillEl.style.width = `${((i + 1) / songQueries.length) * 100}%`;
+  const processSong = async (index) => {
+    const q = songQueries[index];
+    const searchQuery = q.artist ? `${q.name} ${q.artist}` : q.name;
 
     try {
       const results = await Api.searchSongs(searchQuery, 5);
@@ -2066,11 +2068,28 @@ async function runImport() {
       skippedNames.push(q.name);
     }
 
-    // Small delay to avoid hammering the API
-    if (i < songQueries.length - 1) {
-      await new Promise(r => setTimeout(r, 300));
+    completedCount++;
+    textEl.textContent = `Searching ${completedCount}/${songQueries.length}...`;
+    fillEl.style.width = `${(completedCount / songQueries.length) * 100}%`;
+  };
+
+  while (currentIndex < songQueries.length) {
+    while (activePromises.length < CONCURRENCY_LIMIT && currentIndex < songQueries.length) {
+      const p = processSong(currentIndex).finally(() => {
+        activePromises = activePromises.filter(item => item !== p);
+      });
+      activePromises.push(p);
+      currentIndex++;
+      // Small delay between starting requests to avoid hammering the API at exactly the same time
+      await new Promise(r => setTimeout(r, 50));
+    }
+    if (activePromises.length > 0) {
+      await Promise.race(activePromises);
     }
   }
+
+  // Wait for any remaining promises to finish
+  await Promise.all(activePromises);
 
   // Create playlist
   if (matched.length > 0) {

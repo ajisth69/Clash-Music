@@ -8,8 +8,26 @@
     "dev": "node server.js",
     "test": "node server.test.js"
   },
-  "engines": { "node": ">=16" },
-  "keywords": ["music", "hifi", "proxy"],
+  "engines": {
+    "node": ">=16"
+  },
+  "keywords": [
+    "music",
+    "hifi",
+    "proxy"
+  ],
   "author": "Ajisth",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ajisth69/Clash-Music.git"
+  },
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ajisth69/Clash-Music/issues"
+  },
+  "homepage": "https://github.com/ajisth69/Clash-Music#readme",
+  "dependencies": {
+    "playwright": "^1.60.0"
+  }
 }
