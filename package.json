@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "test": "jest"
+    "test": "node --test && jest"
   },
   "engines": {
     "node": ">=16"
@@ -18,6 +18,18 @@
   ],
   "author": "Ajisth",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ajisth69/Clash-Music.git"
+  },
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ajisth69/Clash-Music/issues"
+  },
+  "homepage": "https://github.com/ajisth69/Clash-Music#readme",
+  "dependencies": {
+    "playwright": "^1.60.0"
+  },
   "devDependencies": {
     "@babel/core": "^7.29.0",
     "@babel/preset-env": "^7.29.5",
