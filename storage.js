@@ -11,8 +11,7 @@ const KEYS = {
   CROSSFADE_ON:'clash_crossfade_enabled', CROSSFADE_DUR:'clash_crossfade_duration',
   GAPLESS:'clash_gapless', THEME:'clash_theme',
   RECENT_SEARCHES:'clash_recent_searches', SLEEP_TIMER:'clash_sleep_timer',
-  SPATIAL_AUDIO:'clash_spatial_audio', SPATIAL_MODE:'clash_spatial_mode', HIFI_MODE:'clash_hifi_mode',
-  WAVESHAPER_MODE:'clash_waveshaper_mode',
+  SPATIAL_AUDIO:'clash_spatial_audio', SPATIAL_MODE:'clash_spatial_mode',
 };
 
 function readJSON(key,fb){try{const r=localStorage.getItem(key);return r?JSON.parse(r):fb;}catch{return fb;}}
@@ -220,7 +219,3 @@ export function getSpatialAudioEnabled(){return readJSON(KEYS.SPATIAL_AUDIO,fals
 export function saveSpatialAudioEnabled(b){writeJSON(KEYS.SPATIAL_AUDIO,!!b);}
 export function getSpatialMode(){return localStorage.getItem(KEYS.SPATIAL_MODE)||'normal';}
 export function saveSpatialMode(m){localStorage.setItem(KEYS.SPATIAL_MODE,m);}
-export function getHiFiMode(){return readJSON(KEYS.HIFI_MODE,false);}
-export function saveHiFiMode(b){writeJSON(KEYS.HIFI_MODE,!!b);}
-export function getWaveshaperMode(){return readJSON(KEYS.WAVESHAPER_MODE,false);}
-export function saveWaveshaperMode(b){writeJSON(KEYS.WAVESHAPER_MODE,!!b);}

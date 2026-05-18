@@ -18,7 +18,6 @@ import * as Player  from './player.js';
 import * as Storage from './storage.js';
 import * as Api     from './api.js';
 import * as Vis     from './visualizer.js';
-import { hifiDSP }  from './tone-hifi.js';
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -1332,7 +1331,6 @@ export function initUI() {
   btnHome.classList.add('active');
   // Sync spatial button initial state
   syncSpatialBtn();
-  document.body.classList.toggle('hifi-active', Storage.getHiFiMode());
 
   // ── Player Event Bus ──
   document.addEventListener('player:trackchange', (e) => {
@@ -1418,17 +1416,6 @@ export function initUI() {
     $('#menu-expand')?.addEventListener('click', () => { $('#btn-expand')?.click(); moreMenu.classList.add('hidden'); });
     $('#menu-shuffle')?.addEventListener('click', () => { $('#btn-shuffle')?.click(); moreMenu.classList.add('hidden'); });
     $('#menu-repeat')?.addEventListener('click', () => { $('#btn-repeat')?.click(); moreMenu.classList.add('hidden'); });
-    
-    $('#menu-hifi')?.addEventListener('click', () => {
-      const hifi = !Storage.getHiFiMode();
-      Storage.saveHiFiMode(hifi);
-      document.body.classList.toggle('hifi-active', hifi);
-      if (hifiDSP && !hifi) hifiDSP.toggleEffects();
-      Player.reloadHiFiStream();
-      if($('#hifi-toggle')) $('#hifi-toggle').checked = hifi;
-      showToast(hifi ? 'Hi-Fi 320kbps ON ✓' : 'Hi-Fi off', 'ph ph-wave-sine');
-      moreMenu.classList.add('hidden');
-    });
 
     $('#menu-spatial')?.addEventListener('click', () => {
       const on = !Storage.getSpatialAudioEnabled();
@@ -1568,23 +1555,6 @@ function initSettings() {
       syncSpatialModeChips(mode);
       showToast(`Spatial Mode: ${mode}`, 'ph ph-broadcast');
     });
-  });
-
-  // Hi-Fi Mode
-  $('#hifi-toggle')?.addEventListener('change', (e) => {
-    Storage.saveHiFiMode(e.target.checked);
-    Vis.setHiFiDSP(e.target.checked);
-    Player.reloadHiFiStream();
-    showToast(e.target.checked ? 'Hi-Fi 320kbps ON ✓' : 'Hi-Fi off', 'ph ph-wave-sine');
-    document.body.classList.toggle('hifi-active', e.target.checked);
-  });
-
-  // Waveshaper Mode
-  $('#waveshaper-toggle')?.addEventListener('change', (e) => {
-    Storage.saveWaveshaperMode(e.target.checked);
-    Vis.setWaveshaperDSP(e.target.checked);
-    showToast(e.target.checked ? 'Waveshaper Warmth ON' : 'Waveshaper off', 'ph ph-waves');
-    document.body.classList.toggle('waveshaper-active', e.target.checked);
   });
 
   // Restore saved theme on load
@@ -1736,16 +1706,6 @@ function syncSettingsUI() {
   const currentSpatialMode = Storage.getSpatialMode();
   setCustomSelectValue('spatial-mode-select', currentSpatialMode);
   syncSpatialModeChips(currentSpatialMode);
-
-  const hifiToggle = $('#hifi-toggle');
-  if (hifiToggle) hifiToggle.checked = Storage.getHiFiMode();
-
-  document.body.classList.toggle('hifi-active', Storage.getHiFiMode());
-
-  const waveshaperToggle = $('#waveshaper-toggle');
-  if (waveshaperToggle) waveshaperToggle.checked = Storage.getWaveshaperMode();
-
-  document.body.classList.toggle('waveshaper-active', Storage.getWaveshaperMode());
 }
 
 function syncEQSliders() {
