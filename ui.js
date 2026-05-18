@@ -1578,6 +1578,14 @@ function initSettings() {
     document.body.classList.toggle('hifi-active', e.target.checked);
   });
 
+  // Waveshaper Mode
+  $('#waveshaper-toggle')?.addEventListener('change', (e) => {
+    Storage.saveWaveshaperMode(e.target.checked);
+    Vis.setWaveshaperDSP(e.target.checked);
+    showToast(e.target.checked ? 'Waveshaper Warmth ON' : 'Waveshaper off', 'ph ph-waves');
+    document.body.classList.toggle('waveshaper-active', e.target.checked);
+  });
+
   // Restore saved theme on load
   applyTheme(Storage.getTheme());
 }
@@ -1732,6 +1740,11 @@ function syncSettingsUI() {
   if (hifiToggle) hifiToggle.checked = Storage.getHiFiMode();
 
   document.body.classList.toggle('hifi-active', Storage.getHiFiMode());
+
+  const waveshaperToggle = $('#waveshaper-toggle');
+  if (waveshaperToggle) waveshaperToggle.checked = Storage.getWaveshaperMode();
+
+  document.body.classList.toggle('waveshaper-active', Storage.getWaveshaperMode());
 }
 
 function syncEQSliders() {
