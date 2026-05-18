@@ -477,7 +477,9 @@ export function renderSongRow(container, songs) {
     container.innerHTML = '<p style="color:var(--text-muted);padding:8px;font-size:0.8rem;">No songs found</p>';
     return;
   }
-  songs.forEach((s, i) => container.appendChild(createSongCard(s, songs, i)));
+  const frag = document.createDocumentFragment();
+  songs.forEach((s, i) => frag.appendChild(createSongCard(s, songs, i)));
+  container.appendChild(frag);
   highlightPlaying();
 }
 
@@ -488,7 +490,9 @@ export function appendSongRow(container, songs) {
   const offset   = existing.length;
   // Build a combined list for context (existing ids + new)
   const allSongs = [...songs]; // new songs form their own mini-list for now
-  songs.forEach((s, i) => container.appendChild(createSongCard(s, allSongs, i)));
+  const frag = document.createDocumentFragment();
+  songs.forEach((s, i) => frag.appendChild(createSongCard(s, allSongs, i)));
+  container.appendChild(frag);
   highlightPlaying();
 }
 
