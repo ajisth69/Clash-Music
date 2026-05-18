@@ -65,18 +65,27 @@ function generateImpulse(decay, delay, roomSize) {
   const buffer     = audioCtx.createBuffer(2, length, sampleRate);
   const delayS     = Math.floor(delay * sampleRate);
 
-  for (let ch = 0; ch < 2; ch++) {
-    const data = buffer.getChannelData(ch);
-    for (let i = 0; i < length; i++) {
-      if (i < delayS) { data[i] = 0; continue; }
-      const t = (i - delayS) / (length - delayS);
-      // Exponential decay with random noise for natural reverb
-      const envelope = Math.pow(1 - t, 2 + roomSize * 4);
-      data[i] = (Math.random() * 2 - 1) * envelope;
-      // Add subtle early reflections
-      if (t < 0.05) {
-        data[i] += (Math.random() * 2 - 1) * 0.5 * (1 - t / 0.05);
-      }
+  const dataL = buffer.getChannelData(0);
+  const dataR = buffer.getChannelData(1);
+
+  for (let i = 0; i < length; i++) {
+    if (i < delayS) {
+      dataL[i] = 0;
+      dataR[i] = 0;
+      continue;
+    }
+    const t = (i - delayS) / (length - delayS);
+    // Exponential decay with random noise for natural reverb
+    const envelope = Math.pow(1 - t, 2 + roomSize * 4);
+
+    dataL[i] = (Math.random() * 2 - 1) * envelope;
+    dataR[i] = (Math.random() * 2 - 1) * envelope;
+
+    // Add subtle early reflections
+    if (t < 0.05) {
+      const earlyRef = 0.5 * (1 - t / 0.05);
+      dataL[i] += (Math.random() * 2 - 1) * earlyRef;
+      dataR[i] += (Math.random() * 2 - 1) * earlyRef;
     }
   }
   return buffer;

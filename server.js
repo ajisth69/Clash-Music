@@ -72,6 +72,17 @@ const server = http.createServer((req, res) => {
     }
 
     const upstreamOpts = url.parse(decodedUrl);
+
+    // SSRF Protection: Validate scheme and hostname
+    const isValidScheme = upstreamOpts.protocol === 'http:' || upstreamOpts.protocol === 'https:';
+    const isValidHost = upstreamOpts.hostname === 'saavncdn.com' || (upstreamOpts.hostname && upstreamOpts.hostname.endsWith('.saavncdn.com'));
+
+    if (!isValidScheme || !isValidHost) {
+      res.writeHead(403, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Forbidden: Invalid URL scheme or domain' }));
+      return;
+    }
+
     const lib = decodedUrl.startsWith('https') ? https : http;
 
     const upstreamHeaders = { 'User-Agent': 'ClashMusics/2.0' };
@@ -170,7 +181,30 @@ const server = http.createServer((req, res) => {
   const filePath = path.join(__dirname, reqPath);
 
   // Security: check if file is within directory to prevent path traversal
-  if (!filePath.startsWith(__dirname)) {
+  const expectedDir = path.join(__dirname, path.sep);
+  if (!filePath.startsWith(expectedDir)) {
+    res.writeHead(403, { ...CORS_HEADERS, 'Content-Type': 'text/plain' });
+    res.end('Forbidden');
+    return;
+  }
+
+  // Security: Block sensitive files and hidden paths
+  const lowerPath = reqPath.toLowerCase();
+  const isSensitiveFile = lowerPath === '/server.js' ||
+                          lowerPath === '/package.json' ||
+                          lowerPath === '/vercel.json' ||
+                          lowerPath.includes('/.');
+
+  if (isSensitiveFile) {
+    res.writeHead(403, { ...CORS_HEADERS, 'Content-Type': 'text/plain' });
+    res.end('Forbidden');
+    return;
+  }
+
+  const ext = path.extname(filePath).toLowerCase();
+
+  // Security: Enforce an extension whitelist
+  if (!MIME_TYPES[ext]) {
     res.writeHead(403, { ...CORS_HEADERS, 'Content-Type': 'text/plain' });
     res.end('Forbidden');
     return;
