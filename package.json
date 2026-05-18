@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "test": "node server.test.js && node test/storage.test.mjs"
+    "test": "node --test"
   },
   "engines": {
     "node": ">=16"

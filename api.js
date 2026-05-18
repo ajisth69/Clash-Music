@@ -27,7 +27,7 @@ async function apiFetch(path, timeoutMs = 15000) {
 // lowest level fetch — removed, apiFetch handles it all now
 
 // normalize the raw API response into a consistent shape
-function normaliseSong(raw) {
+export function normaliseSong(raw) {
   if (!raw) return null;
 
   let image = '';
