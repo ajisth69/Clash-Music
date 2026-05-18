@@ -1,8 +1,9 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const http = require('http');
-const https = require('https');
+const http = require('node:http');
+const https = require('node:https');
 const { EventEmitter } = require('events');
+const server = require('./server.js');
 
 // Suppress console output for cleaner test results
 const originalConsoleLog = console.log;
@@ -10,29 +11,67 @@ const originalConsoleError = console.error;
 console.log = () => {};
 console.error = () => {};
 
-// Intercept createServer to get the server instance
-const originalCreateServer = http.createServer;
-let serverInstance;
-http.createServer = function(...args) {
-  serverInstance = originalCreateServer.apply(this, args);
-  return serverInstance;
-};
+test('HiFi proxy invalid URL handling', async (t) => {
+  // Start the server on a random port for testing
+  if (!server.listening) {
+    await new Promise((resolve) => {
+      server.listen(0, resolve);
+    });
+  }
 
-// Start the server on a random port
-process.env.PORT = '0';
-require('./server');
+  const port = server.address().port;
+
+  t.after(() => {
+    server.close();
+  });
+
+  await t.test('Missing url param returns 400', async () => {
+    const res = await new Promise((resolve) => {
+      http.get(`http://localhost:${port}/stream`, resolve);
+    });
+
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.headers['content-type'], 'application/json');
+
+    let data = '';
+    for await (const chunk of res) {
+      data += chunk;
+    }
+
+    const body = JSON.parse(data);
+    assert.deepStrictEqual(body, { error: 'Missing url param' });
+  });
+
+  await t.test('Invalid url encoding returns 400', async () => {
+    // %E0%A4%A is an invalid UTF-8 sequence and will throw when decodeURIComponent is called
+    const res = await new Promise((resolve) => {
+      http.get(`http://localhost:${port}/stream?url=%E0%A4%A`, resolve);
+    });
+
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.headers['content-type'], 'application/json');
+
+    let data = '';
+    for await (const chunk of res) {
+      data += chunk;
+    }
+
+    const body = JSON.parse(data);
+    assert.deepStrictEqual(body, { error: 'Invalid url' });
+  });
+});
 
 test('API Proxy failover logic', async (t) => {
-  if (!serverInstance.listening) {
-    await new Promise(resolve => serverInstance.on('listening', resolve));
+  if (!server.listening) {
+    await new Promise(resolve => server.listen(0, resolve));
   }
-  const port = serverInstance.address().port;
+  const port = server.address().port;
 
   const originalHttpsRequest = https.request;
 
   t.after(() => {
     https.request = originalHttpsRequest;
-    serverInstance.close();
+    server.close();
     console.log = originalConsoleLog;
     console.error = originalConsoleError;
   });
