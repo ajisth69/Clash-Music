@@ -3,9 +3,13 @@ import { searchSongs } from '../api.js';
 
 describe('apiFetch network errors', () => {
   beforeEach(() => {
+    if (!global.fetch) {
+      global.fetch = jest.fn();
+    }
     jest.spyOn(global, 'fetch');
     jest.spyOn(console, 'error').mockImplementation(() => {});
     jest.spyOn(console, 'warn').mockImplementation(() => {});
+    jest.clearAllMocks();
   });
 
   afterEach(() => {

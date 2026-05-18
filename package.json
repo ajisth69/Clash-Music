@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "test": "node --test && jest"
+    "test": "node server.test.js && jest"
   },
   "engines": {
     "node": ">=16"
