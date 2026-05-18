@@ -176,6 +176,28 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Security: Block sensitive files and hidden paths
+  const lowerPath = reqPath.toLowerCase();
+  const isSensitiveFile = lowerPath === '/server.js' ||
+                          lowerPath === '/package.json' ||
+                          lowerPath === '/vercel.json' ||
+                          lowerPath.includes('/.');
+
+  if (isSensitiveFile) {
+    res.writeHead(403, { ...CORS_HEADERS, 'Content-Type': 'text/plain' });
+    res.end('Forbidden');
+    return;
+  }
+
+  const ext = path.extname(filePath).toLowerCase();
+
+  // Security: Enforce an extension whitelist
+  if (!MIME_TYPES[ext]) {
+    res.writeHead(403, { ...CORS_HEADERS, 'Content-Type': 'text/plain' });
+    res.end('Forbidden');
+    return;
+  }
+
   fs.stat(filePath, (err, stats) => {
     if (err || !stats.isFile()) {
       // Return 404 for missing static files
