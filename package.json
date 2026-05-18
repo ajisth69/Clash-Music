@@ -5,10 +5,24 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "test": "jest"
   },
-  "engines": { "node": ">=16" },
-  "keywords": ["music", "hifi", "proxy"],
+  "engines": {
+    "node": ">=16"
+  },
+  "keywords": [
+    "music",
+    "hifi",
+    "proxy"
+  ],
   "author": "Ajisth",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.29.0",
+    "@babel/preset-env": "^7.29.5",
+    "babel-jest": "^30.4.1",
+    "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1"
+  }
 }
