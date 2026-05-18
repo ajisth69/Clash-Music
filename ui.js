@@ -68,6 +68,16 @@ function decode(str) {
   return t.value;
 }
 
+function escapeHTML(str) {
+  return String(str).replace(/[&<>'"]/g, tag => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#39;',
+    '"': '&quot;'
+  }[tag] || tag));
+}
+
 function fmtTime(s) {
   if (!s || isNaN(s)) return '0:00';
   const m = Math.floor(s / 60);
@@ -115,7 +125,7 @@ function showConfirm(title, message, confirmLabel = 'Delete') {
 export function showToast(msg, icon = 'ph ph-check-circle') {
   const t = document.createElement('div');
   t.className = 'toast';
-  t.innerHTML = `<i class="${icon}"></i><span>${msg}</span>`;
+  t.innerHTML = `<i class="${icon}"></i><span>${escapeHTML(msg)}</span>`;
   toastBox.appendChild(t);
   setTimeout(() => {
     t.classList.add('toast--removing');
@@ -630,7 +640,7 @@ function showPlaylists() {
     hdr.style.gap = '12px';
     
     hdr.innerHTML = `
-      <h3 style="font-family: var(--font-display); font-size: 1.2rem; margin: 0;">${decode(p.name)}</h3>
+      <h3 style="font-family: var(--font-display); font-size: 1.2rem; margin: 0;">${escapeHTML(decode(p.name))}</h3>
       <span style="font-size:0.75rem; color:var(--text-muted);">${p.songs.length} songs</span>
       <button class="playlist-share-btn" data-id="${p.id}" title="Share Playlist" style="background:rgba(255,255,255,0.05); border:none; border-radius:6px; padding:6px 8px; color:#fff; cursor:pointer; display:inline-flex; align-items:center; gap:4px; transition: background 0.2s;" aria-label="Share Playlist"><i class="ph ph-share-network"></i></button>
       <button class="playlist-dl-all-btn" data-id="${p.id}" title="Download All Songs" style="background: linear-gradient(135deg, rgba(var(--accent-rgb, 139,92,246), 0.15), rgba(var(--accent-rgb, 139,92,246), 0.05)); border:1px solid rgba(var(--accent-rgb, 139,92,246), 0.25); border-radius:6px; padding:6px 12px; color:#fff; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-size:0.75rem; font-weight:500; transition: all 0.2s;" aria-label="Download All Songs">
@@ -935,7 +945,7 @@ function renderPlaylistsInModal() {
   pList.forEach(p => {
     const row = document.createElement('div');
     row.className = 'playlist-rowItem';
-    row.innerHTML = `<span>${decode(p.name)}</span> <span style="font-size:0.7rem; color:var(--text-muted);">${p.songs.length} ♫</span>`;
+    row.innerHTML = `<span>${escapeHTML(decode(p.name))}</span> <span style="font-size:0.7rem; color:var(--text-muted);">${p.songs.length} ♫</span>`;
     
     // Add logic
     row.addEventListener('click', () => {
