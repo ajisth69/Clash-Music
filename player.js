@@ -201,8 +201,16 @@ export function reloadHiFiStream() {
   if (!currentSong || activeAudio.paused) return;
   const time = activeAudio.currentTime;
   activeAudio.src = buildStreamUrl(currentSong);
-  activeAudio.currentTime = time;
-  activeAudio.play().catch(e => console.warn('[Player] HiFi Reload failed', e));
+
+  // Wait for metadata to load before setting currentTime to prevent errors
+  const onLoadedMetadata = () => {
+    activeAudio.currentTime = time;
+    activeAudio.play().catch(e => console.warn('[Player] HiFi Reload failed', e));
+    activeAudio.removeEventListener('loadedmetadata', onLoadedMetadata);
+  };
+
+  activeAudio.addEventListener('loadedmetadata', onLoadedMetadata);
+  activeAudio.load();
 }
 
 export function pause() { logCurrentCompletion(); activeAudio.pause(); emit('pause'); }

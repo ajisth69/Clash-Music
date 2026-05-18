@@ -49,13 +49,13 @@ const PRESETS = {
 
 /* ── Spatial Mode Impulse Response Configs ── */
 const SPATIAL_MODES = {
-  normal:    { decay: 0.3,  delay: 0.01, wet: 0.15, roomSize: 0.2,  label: 'Normal' },
-  concert:   { decay: 2.5,  delay: 0.04, wet: 0.45, roomSize: 0.8,  label: 'Concert Hall' },
-  hall:      { decay: 3.5,  delay: 0.06, wet: 0.55, roomSize: 0.9,  label: 'Large Hall' },
-  cave:      { decay: 5.0,  delay: 0.08, wet: 0.65, roomSize: 1.0,  label: 'Cave' },
-  echo:      { decay: 1.8,  delay: 0.15, wet: 0.50, roomSize: 0.5,  label: 'Echo' },
-  cathedral: { decay: 4.5,  delay: 0.07, wet: 0.60, roomSize: 0.95, label: 'Cathedral' },
-  studio:    { decay: 0.6,  delay: 0.02, wet: 0.25, roomSize: 0.3,  label: 'Studio' },
+  normal:    { decay: 0.8,  delay: 0.02, wet: 0.35, roomSize: 0.4,  label: 'Normal' },
+  concert:   { decay: 3.5,  delay: 0.06, wet: 0.65, roomSize: 0.9,  label: 'Concert Hall' },
+  hall:      { decay: 4.5,  delay: 0.08, wet: 0.75, roomSize: 0.95, label: 'Large Hall' },
+  cave:      { decay: 6.0,  delay: 0.10, wet: 0.85, roomSize: 1.0,  label: 'Cave' },
+  echo:      { decay: 2.5,  delay: 0.25, wet: 0.70, roomSize: 0.7,  label: 'Echo' },
+  cathedral: { decay: 6.5,  delay: 0.09, wet: 0.80, roomSize: 0.98, label: 'Cathedral' },
+  studio:    { decay: 1.2,  delay: 0.03, wet: 0.45, roomSize: 0.5,  label: 'Studio' },
 };
 
 /* Generate a synthetic impulse response buffer for reverb */
@@ -221,18 +221,22 @@ export function setHiFiDSP(on) {
   if (!initialized || corsBlocked || !hifiBassNode || !hifiTrebleNode || !hifiLoudnessNode) return;
   
   // To make the quality "skyrocket" exactly like a hardware phone enhancer:
-  // 1. Boost volume by +2.5dB (1.33x multiplier) for perceived loudness jump
-  // 2. Massive +6.5dB mid-bass punch at 110Hz (perfect for phones)
-  // 3. +5.5dB treble boost at 8kHz for crisp vocals and cymbals
+  // 1. Boost volume by +4dB (1.58x multiplier) for perceived loudness jump
+  // 2. Massive +10dB mid-bass punch at 110Hz (perfect for phones)
+  // 3. +8.5dB treble boost at 8kHz for crisp vocals and cymbals
   
-  hifiLoudnessNode.gain.value = on ? 1.35 : 1.0;
-  hifiBassNode.gain.value = on ? 6.5 : 0;
-  hifiTrebleNode.gain.value = on ? 5.5 : 0;
+  hifiLoudnessNode.gain.value = on ? 1.58 : 1.0;
+  hifiBassNode.gain.value = on ? 10.0 : 0;
+  hifiTrebleNode.gain.value = on ? 8.5 : 0;
 }
 
 /* ── Spatial Audio with Modes ── */
 function rebuildSpatialChain() {
   if (!audioCtx || !gainNode || corsBlocked) return;
+
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(() => {});
+  }
 
   // Disconnect gain from everything
   try { gainNode.disconnect(); } catch {}
@@ -298,19 +302,21 @@ export function getSpatialEnabled() { return spatialEnabled; }
 function startSpatialAnimation() {
   if (spatialInterval) return;
   spatialInterval = setInterval(() => {
-    spatialAngle = (spatialAngle + 1.5) % 360;
+    spatialAngle = (spatialAngle + 3.0) % 360;
     const rad = (spatialAngle * Math.PI) / 180;
-    const x   = Math.sin(rad) * 3;
-    const z   = Math.cos(rad) * 3 - 1;
+    const x   = Math.sin(rad) * 6;
+    const z   = Math.cos(rad) * 6 - 2;
+    const y   = Math.sin(rad * 2) * 2; // Add vertical movement for true 3D spatial effect
     if (pannerNode) {
       if (pannerNode.positionX) {
         pannerNode.positionX.setTargetAtTime(x, audioCtx.currentTime, 0.1);
+        pannerNode.positionY.setTargetAtTime(y, audioCtx.currentTime, 0.1);
         pannerNode.positionZ.setTargetAtTime(z, audioCtx.currentTime, 0.1);
       } else {
-        pannerNode.setPosition(x, 0, z);
+        pannerNode.setPosition(x, y, z);
       }
     }
-  }, 50);
+  }, 30);
 }
 
 function stopSpatialAnimation() {

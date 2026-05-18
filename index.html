@@ -437,6 +437,15 @@
         </div>
       </div>
 
+      <!-- Stats -->
+      <div class="settings-section">
+        <div class="settings-label"><i class="ph ph-chart-bar"></i> Listening Stats</div>
+        <div class="settings-row">
+          <span>View your music stats</span>
+          <button class="import-btn" id="btn-view-stats" style="margin: 0; padding: 6px 12px; font-size: 0.8rem; height: auto;"><i class="ph ph-chart-pie-slice"></i> View Stats</button>
+        </div>
+      </div>
+
       <!-- Visualizer -->
       <div class="settings-section">
         <div class="settings-label"><i class="ph ph-waveform"></i> Audio Visualizer</div>
@@ -547,6 +556,21 @@
         <p class="settings-hint">Streams audio at the highest available bitrate for lossless-grade quality.</p>
       </div>
 
+    </div>
+  </div>
+
+  <!-- Stats Modal -->
+  <div class="modal-overlay hidden" id="stats-modal">
+    <div class="modal" style="max-width: 450px;">
+      <div class="modal-header">
+        <h3><i class="ph-fill ph-chart-bar"></i> Your Stats</h3>
+        <button class="modal-close" id="stats-close"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="modal-body" style="padding: 16px 24px;">
+        <div id="stats-content" style="display: flex; flex-direction: column; gap: 16px;">
+          <!-- Stats will be injected here -->
+        </div>
+      </div>
     </div>
   </div>
 

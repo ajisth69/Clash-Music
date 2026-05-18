@@ -1467,6 +1467,22 @@ function initSettings() {
   });
   $('#settings-close')?.addEventListener('click', () => panel.classList.add('hidden'));
 
+  // Stats
+  $('#btn-view-stats')?.addEventListener('click', () => {
+    panel.classList.add('hidden');
+    openStatsModal();
+  });
+
+  $('#stats-close')?.addEventListener('click', () => {
+    $('#stats-modal')?.classList.add('hidden');
+  });
+
+  $('#stats-modal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'stats-modal') {
+      $('#stats-modal').classList.add('hidden');
+    }
+  });
+
   // Theme
   $$('#theme-grid .theme-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1564,6 +1580,123 @@ function initSettings() {
 
   // Restore saved theme on load
   applyTheme(Storage.getTheme());
+}
+
+function openStatsModal() {
+  const modal = $('#stats-modal');
+  if (!modal) return;
+
+  const content = $('#stats-content');
+  const log = Storage.getPlayLog();
+
+  if (!log || log.length === 0) {
+    content.innerHTML = '<p style="color:var(--text-muted); text-align:center;">No listening history found yet. Play some music first!</p>';
+    modal.classList.remove('hidden');
+    return;
+  }
+
+  let totalTime = 0;
+  const songCounts = {};
+  const artistCounts = {};
+  const albumCounts = {};
+  const langCounts = {};
+
+  log.forEach(entry => {
+    totalTime += (entry.duration || 0);
+
+    if (entry.id) {
+      songCounts[entry.id] = songCounts[entry.id] || { count: 0, title: entry.title, artist: entry.artist, image: entry.image };
+      songCounts[entry.id].count++;
+    }
+
+    if (entry.artist) {
+      entry.artist.split(',').forEach(a => {
+        const name = a.trim();
+        if (name && name !== 'Unknown Artist') {
+          artistCounts[name] = (artistCounts[name] || 0) + 1;
+        }
+      });
+    }
+
+    if (entry.album) {
+      albumCounts[entry.album] = (albumCounts[entry.album] || 0) + 1;
+    }
+
+    if (entry.language) {
+      langCounts[entry.language] = (langCounts[entry.language] || 0) + 1;
+    }
+  });
+
+  const mostPlayedSong = Object.values(songCounts).sort((a, b) => b.count - a.count)[0];
+  const mostPlayedArtist = Object.entries(artistCounts).sort((a, b) => b[1] - a[1])[0];
+  const mostPlayedAlbum = Object.entries(albumCounts).sort((a, b) => b[1] - a[1])[0];
+  const favLang = Object.entries(langCounts).sort((a, b) => b[1] - a[1])[0];
+
+  const timeHrs = Math.floor(totalTime / 3600);
+  const timeMins = Math.floor((totalTime % 3600) / 60);
+  const playTimeStr = timeHrs > 0 ? `${timeHrs}h ${timeMins}m` : `${timeMins}m`;
+
+  content.innerHTML = `
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+      <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; text-align: center;">
+        <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent);">${log.length}</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Total Plays</div>
+      </div>
+      <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; text-align: center;">
+        <div style="font-size: 1.5rem; font-weight: 700; color: var(--pink);">${playTimeStr}</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">Play Time</div>
+      </div>
+    </div>
+
+    ${mostPlayedSong ? `
+    <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; display: flex; align-items: center; gap: 12px;">
+      <img src="${mostPlayedSong.image}" style="width: 48px; height: 48px; border-radius: 6px; object-fit: cover;" onerror="this.style.display='none'" />
+      <div style="flex: 1; overflow: hidden;">
+        <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">Most Played Song</div>
+        <div style="font-size: 0.95rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(decode(mostPlayedSong.title))}</div>
+        <div style="font-size: 0.8rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(decode(mostPlayedSong.artist))} (${mostPlayedSong.count} plays)</div>
+      </div>
+    </div>
+    ` : ''}
+
+    ${mostPlayedArtist || mostPlayedAlbum ? `
+    <div style="display:flex; flex-direction: column; gap: 8px; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
+      ${mostPlayedArtist ? `
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">Top Artist</div>
+          <div style="font-size: 0.9rem; font-weight: 500;">${escapeHTML(decode(mostPlayedArtist[0]))}</div>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--accent); font-weight: 600;">${mostPlayedArtist[1]} plays</div>
+      </div>
+      ` : ''}
+
+      ${mostPlayedArtist && mostPlayedAlbum ? '<div style="height: 1px; background: rgba(255,255,255,0.1); margin: 4px 0;"></div>' : ''}
+
+      ${mostPlayedAlbum ? `
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">Top Album</div>
+          <div style="font-size: 0.9rem; font-weight: 500;">${escapeHTML(decode(mostPlayedAlbum[0]))}</div>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--accent); font-weight: 600;">${mostPlayedAlbum[1]} plays</div>
+      </div>
+      ` : ''}
+    </div>
+    ` : ''}
+
+    ${favLang ? `
+    <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">Favorite Language</div>
+        <div style="font-size: 0.9rem; font-weight: 500; text-transform: capitalize;">${escapeHTML(favLang[0])}</div>
+      </div>
+      <div style="font-size: 0.8rem; color: var(--accent); font-weight: 600;">${favLang[1]} tracks</div>
+    </div>
+    ` : ''}
+  `;
+
+  modal.classList.remove('hidden');
 }
 
 function syncSpatialModeChips(mode) {
