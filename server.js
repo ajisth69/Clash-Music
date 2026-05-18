@@ -72,6 +72,17 @@ const server = http.createServer((req, res) => {
     }
 
     const upstreamOpts = url.parse(decodedUrl);
+
+    // SSRF Protection: Validate scheme and hostname
+    const isValidScheme = upstreamOpts.protocol === 'http:' || upstreamOpts.protocol === 'https:';
+    const isValidHost = upstreamOpts.hostname === 'saavncdn.com' || (upstreamOpts.hostname && upstreamOpts.hostname.endsWith('.saavncdn.com'));
+
+    if (!isValidScheme || !isValidHost) {
+      res.writeHead(403, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Forbidden: Invalid URL scheme or domain' }));
+      return;
+    }
+
     const lib = decodedUrl.startsWith('https') ? https : http;
 
     const upstreamHeaders = { 'User-Agent': 'ClashMusics/2.0' };
