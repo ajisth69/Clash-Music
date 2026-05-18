@@ -28,7 +28,9 @@
   },
   "homepage": "https://github.com/ajisth69/Clash-Music#readme",
   "dependencies": {
-    "playwright": "^1.60.0"
+    "axios": "^1.16.1",
+    "playwright": "^1.60.0",
+    "tone": "^15.1.22"
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",

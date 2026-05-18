@@ -1,0 +1,10 @@
+
+🎵  Clash Musics Server Running Locally!
+✓  Website Available   : http://localhost:3001
+✓  Full API Proxy      : http://localhost:3001/api/*
+✓  Hi-Fi Stream Proxy  : http://localhost:3001/stream
+✓  Hi-Fi 320kbps       : ACTIVE
+✓  Range/Seeking       : ACTIVE
+✓  CORS Bypass         : ACTIVE
+
+Press Ctrl+C to terminate the server.
