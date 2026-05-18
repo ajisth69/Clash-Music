@@ -32,7 +32,7 @@ function buildUrl(url) {
 }
 
 // normalize the raw API response into a consistent shape
-function normaliseSong(raw) {
+export function normaliseSong(raw) {
   if (!raw) return null;
 
   let image = '';
