@@ -182,18 +182,31 @@ export async function getAlbumById(id) {
   };
 }
 
+export async function getArtistSongs(id, page = 0) {
+  if (!id) return { songs: [], total: 0 };
+  const res = await apiFetch(`/artists/${id}/songs?page=${page}&sortBy=popularity&sortOrder=desc`);
+  if (!res?.data) return { songs: [], total: 0 };
+  return {
+    songs: Array.isArray(res.data.songs) ? res.data.songs.map(normaliseSong).filter(Boolean) : [],
+    total: res.data.total || 0
+  };
+}
+
 export async function getArtistById(id) {
   if (!id) return null;
-  // high songCount to get a decent discography instead of the default 5-10
-  const res = await apiFetch(`/artists?id=${id}&songCount=100&albumCount=50`);
+  // Fetch artist profile for metadata (name, image)
+  const res = await apiFetch(`/artists?id=${id}&songCount=0&albumCount=0`);
   if (!res?.data) return null;
   const artistData = res.data;
+  // Fetch first page of songs from the dedicated paginated endpoint
+  const firstPage = await getArtistSongs(id, 0);
   return {
     id: artistData.id,
     name: artistData.name || artistData.title || '',
     image: (Array.isArray(artistData.image) && artistData.image.length > 0) ? 
            (artistData.image.find(i => i.quality === '500x500')?.url || artistData.image[artistData.image.length - 1].url) : 
            (typeof artistData.image === 'string' ? artistData.image : ''),
-    songs: Array.isArray(artistData.topSongs) ? artistData.topSongs.map(normaliseSong).filter(Boolean) : []
+    songs: firstPage.songs,
+    totalSongs: firstPage.total
   };
 }

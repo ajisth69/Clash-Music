@@ -446,7 +446,7 @@ function createSongCard(song, list, idx, playlistId = null) {
   // Share
   card.querySelector('.song-card__share-btn').addEventListener('click', (e) => {
     e.stopPropagation();
-    const url = `https://clashmusic.ajisth007.workers.dev/?songId=${song.id}`;
+    const url = `https://musicssr.ajisth007.workers.dev/track/${song.id}`;
     navigator.clipboard.writeText(url).then(() => {
       showToast('Link copied to clipboard!', 'ph ph-link');
     });
@@ -500,6 +500,8 @@ export function appendSongRow(container, songs) {
 function hideAll() {
   [viewHome, viewSearch, viewLiked, viewPlaylists, viewHistory, viewDetail].forEach(v => v?.classList.add('hidden'));
   btnHome?.classList.remove('active');
+  // Clean up artist infinite scroll if active
+  if (typeof cleanupArtistObserver === 'function') cleanupArtistObserver();
   // Close settings if navigating
   $('#settings-panel')?.classList.add('hidden');
 }
@@ -660,7 +662,7 @@ function showPlaylists() {
     shareBtn.addEventListener('click', () => {
       const ids = p.songs.map(s => s.id);
       const b64 = btoa(JSON.stringify(ids));
-      const url = `https://clashmusic.ajisth007.workers.dev/?pName=${encodeURIComponent(p.name)}&pData=${encodeURIComponent(b64)}`;
+      const url = `https://musicssr.ajisth007.workers.dev/?pName=${encodeURIComponent(p.name)}&pData=${encodeURIComponent(b64)}`;
       navigator.clipboard.writeText(url).then(() => {
         showToast('Playlist link copied!', 'ph ph-link');
       });
@@ -1029,12 +1031,36 @@ function syncSpatialBtn() {
 
 /* GLOBAL BOOT (URL PARSING) */
 export async function processShareLink() {
+  const path = window.location.pathname;
+  const trackMatch = path.match(/^\/track\/([^\/]+)/);
+  const albumMatch = path.match(/^\/album\/([^\/]+)/);
+
   const params = new URLSearchParams(window.location.search);
   const songId = params.get('songId');
   const pName = params.get('pName');
   const pData = params.get('pData');
 
-  if (songId) {
+  if (trackMatch) {
+    const trackId = trackMatch[1];
+    const s = await Api.getSongById(trackId);
+    if (s) {
+      Player.playSong(s, [s], 0);
+      // Modern browsers block autoplay on new tabs. Show a friendly toast if it was blocked!
+      setTimeout(() => {
+        const playIcon = document.getElementById('play-icon');
+        if (playIcon && playIcon.classList.contains('ph-play')) {
+          showToast('Tap play to start the shared song! 🎵', 'ph-fill ph-play-circle');
+        }
+      }, 500);
+    }
+    // Cleanup URL to root
+    window.history.replaceState(null, '', '/');
+  } else if (albumMatch) {
+    const albumId = albumMatch[1];
+    openAlbum(albumId);
+    // Cleanup URL to root
+    window.history.replaceState(null, '', '/');
+  } else if (songId) {
     const s = await Api.getSongById(songId);
     if (s) {
       Player.playSong(s, [s], 0);
@@ -1046,8 +1072,8 @@ export async function processShareLink() {
         }
       }, 500);
     }
-    // Cleanup URL
-    window.history.replaceState(null, '', window.location.pathname);
+    // Cleanup URL to root
+    window.history.replaceState(null, '', '/');
   } else if (pName && pData) {
     try {
       const ids = JSON.parse(atob(decodeURIComponent(pData)));
@@ -1074,6 +1100,11 @@ export async function processShareLink() {
 
 /* DETAIL VIEWS (ARTIST & ALBUM) */
 let activeDetailSongs = [];
+let artistDetailPage = 0;
+let artistDetailTotal = 0;
+let artistDetailId = null;
+let artistDetailFetching = false;
+let artistDetailObserver = null;
 
 // Back button handler
 $('#detail-back-btn')?.addEventListener('click', () => {
@@ -1088,17 +1119,33 @@ $('#detail-play-all')?.addEventListener('click', () => {
   }
 });
 
+function cleanupArtistObserver() {
+  if (artistDetailObserver) {
+    artistDetailObserver.disconnect();
+    artistDetailObserver = null;
+  }
+}
+
 function showDetailView(data, type) {
   hideAll();
+  cleanupArtistObserver();
   if (!viewDetail) return;
   viewDetail.classList.remove('hidden');
   
   $('#detail-type').textContent = type;
   $('#detail-title').textContent = decode(data.name);
-  $('#detail-subtitle').textContent = type === 'Artist' ? 'Top Songs' : `${data.songs.length} Tracks`;
+  
+  if (type === 'Artist') {
+    const total = data.totalSongs || data.songs.length;
+    $('#detail-subtitle').textContent = `${total} Songs · Showing ${data.songs.length}`;
+  } else {
+    $('#detail-subtitle').textContent = `${data.songs.length} Tracks`;
+  }
+  
   $('#detail-art').src = data.image || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Crect width='56' height='56' fill='%23181822'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' fill='%23444' font-size='22'%3E♫%3C/text%3E%3C/svg%3E";
   
-  $('#detail-loading')?.classList.add('hidden');
+  const spinner = $('#detail-loading');
+  spinner?.classList.add('hidden');
   
   activeDetailSongs = data.songs || [];
   
@@ -1109,6 +1156,51 @@ function showDetailView(data, type) {
   } else {
     activeDetailSongs.forEach((s, i) => grid.appendChild(createSongCard(s, activeDetailSongs, i)));
     highlightPlaying();
+  }
+  
+  // Set up infinite scroll for Artist pages
+  if (type === 'Artist' && spinner && artistDetailId && activeDetailSongs.length < artistDetailTotal) {
+    spinner.classList.remove('hidden');
+    spinner.innerHTML = '<i class="ph ph-spinner spin-anim"></i> Loading more songs...';
+    
+    artistDetailObserver = new IntersectionObserver(async (entries) => {
+      if (!entries[0].isIntersecting || artistDetailFetching) return;
+      if (activeDetailSongs.length >= artistDetailTotal) {
+        spinner.classList.add('hidden');
+        cleanupArtistObserver();
+        return;
+      }
+      
+      artistDetailFetching = true;
+      artistDetailPage++;
+      const result = await Api.getArtistSongs(artistDetailId, artistDetailPage);
+      
+      if (result.songs.length) {
+        // Deduplicate by song id
+        const existingIds = new Set(activeDetailSongs.map(s => s.id));
+        const newSongs = result.songs.filter(s => !existingIds.has(s.id));
+        
+        if (newSongs.length) {
+          activeDetailSongs.push(...newSongs);
+          const frag = document.createDocumentFragment();
+          newSongs.forEach((s, i) => frag.appendChild(createSongCard(s, activeDetailSongs, activeDetailSongs.length - newSongs.length + i)));
+          grid.appendChild(frag);
+          highlightPlaying();
+          $('#detail-subtitle').textContent = `${artistDetailTotal} Songs · Showing ${activeDetailSongs.length}`;
+        }
+      }
+      
+      if (activeDetailSongs.length >= artistDetailTotal || !result.songs.length) {
+        spinner.classList.add('hidden');
+        spinner.innerHTML = '<i class="ph ph-spinner spin-anim"></i> Loading...';
+        $('#detail-subtitle').textContent = `${artistDetailTotal} Songs · All Loaded`;
+        cleanupArtistObserver();
+      }
+      
+      artistDetailFetching = false;
+    }, { rootMargin: '200px' });
+    
+    artistDetailObserver.observe(spinner);
   }
   
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1124,8 +1216,15 @@ export async function openAlbum(id) {
 export async function openArtist(id) {
   showToast('Loading artist...', 'ph ph-spinner spin-anim');
   const data = await Api.getArtistById(id);
-  if (data) showDetailView(data, 'Artist');
-  else showToast('Failed to load artist.', 'ph ph-warning-circle');
+  if (data) {
+    artistDetailId = id;
+    artistDetailPage = 0;
+    artistDetailTotal = data.totalSongs || data.songs.length;
+    artistDetailFetching = false;
+    showDetailView(data, 'Artist');
+  } else {
+    showToast('Failed to load artist.', 'ph ph-warning-circle');
+  }
 }
 
 /* INIT */
@@ -1242,7 +1341,7 @@ export function initUI() {
   const execShare = () => {
     const s = Player.getCurrentSong();
     if (!s) { showToast('No song selected', 'ph ph-warning-circle'); return; }
-    const url = `https://clashmusic.ajisth007.workers.dev/?songId=${s.id}`;
+    const url = `https://musicssr.ajisth007.workers.dev/track/${s.id}`;
     navigator.clipboard.writeText(url).then(() => showToast('Link copied!', 'ph ph-link'));
   };
   $('#player-share-btn')?.addEventListener('click', execShare);

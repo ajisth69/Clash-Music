@@ -571,8 +571,41 @@ body.cursor-hover .cursor-ring {
   font-size: 0.72rem; color: var(--text-muted); margin-top: 6px;
   font-variant-numeric: tabular-nums;
 }
+.np-controls-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+}
+.np-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+.np-controls-row--primary {
+  gap: 12px;
+}
+.np-controls-row--secondary {
+  gap: 24px;
+}
+@media (max-width: 400px) {
+  .np-controls-row--primary {
+    gap: 8px;
+  }
+  .np-btn {
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 18px !important;
+  }
+  .np-btn--play {
+    width: 50px !important;
+    height: 50px !important;
+    font-size: 22px !important;
+  }
+}
 
-.np-controls { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
 .np-btn {
   width: 44px; height: 44px; border-radius: 50%;
   border: none; background: transparent; color: var(--text-primary);
