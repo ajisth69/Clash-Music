@@ -20,6 +20,18 @@
   ],
   "routes": [
     {
+      "src": "/track/(.*)",
+      "dest": "/api/seo.js"
+    },
+    {
+      "src": "/album/(.*)",
+      "dest": "/api/seo.js"
+    },
+    {
+      "src": "/api/seo",
+      "dest": "/api/seo.js"
+    },
+    {
       "src": "/api/proxy-stream",
       "dest": "/api/proxy-stream.js"
     },
@@ -38,14 +50,6 @@
     {
       "src": "/(.*\\.(js|css|html|svg|ico|png|jpg|webp|woff2?))",
       "dest": "/$1"
-    },
-    {
-      "src": "/track/(.*)",
-      "dest": "/api/seo.js"
-    },
-    {
-      "src": "/album/(.*)",
-      "dest": "/api/seo.js"
     },
     {
       "src": "/(.*)",
