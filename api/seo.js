@@ -132,9 +132,11 @@ module.exports = async (req, res) => {
         <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
       `;
 
-      // Remove existing title and description tags from base HTML to prevent duplication
+      // Remove existing title, description, and OG/Twitter tags from base HTML to prevent duplication
       html = html.replace(/<title>[^]*?<\/title>/gi, '');
       html = html.replace(/<meta name="description"[^]*?\/>/gi, '');
+      html = html.replace(/<meta property="og:[^]*?\/>/gi, '');
+      html = html.replace(/<meta name="twitter:[^]*?\/>/gi, '');
       
       const headInjection = openGraphTags + jsonLdScript;
       html = html.replace('</head>', `${headInjection}\n</head>`);
@@ -231,8 +233,11 @@ module.exports = async (req, res) => {
         <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>
       `;
 
+      // Remove existing title, description, and OG/Twitter tags from base HTML to prevent duplication
       html = html.replace(/<title>[^]*?<\/title>/gi, '');
       html = html.replace(/<meta name="description"[^]*?\/>/gi, '');
+      html = html.replace(/<meta property="og:[^]*?\/>/gi, '');
+      html = html.replace(/<meta name="twitter:[^]*?\/>/gi, '');
       
       const headInjection = openGraphTags + jsonLdScript;
       html = html.replace('</head>', `${headInjection}\n</head>`);
