@@ -40,6 +40,14 @@
       "dest": "/$1"
     },
     {
+      "src": "/track/(.*)",
+      "dest": "/api/seo.js"
+    },
+    {
+      "src": "/album/(.*)",
+      "dest": "/api/seo.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
