@@ -446,7 +446,7 @@ function createSongCard(song, list, idx, playlistId = null) {
   // Share
   card.querySelector('.song-card__share-btn').addEventListener('click', (e) => {
     e.stopPropagation();
-    const url = `https://musicssr.ajisth007.workers.dev/track/${song.id}`;
+    const url = `${window.location.origin}/track/${song.id}`;
     navigator.clipboard.writeText(url).then(() => {
       showToast('Link copied to clipboard!', 'ph ph-link');
     });
@@ -662,7 +662,7 @@ function showPlaylists() {
     shareBtn.addEventListener('click', () => {
       const ids = p.songs.map(s => s.id);
       const b64 = btoa(JSON.stringify(ids));
-      const url = `https://musicssr.ajisth007.workers.dev/?pName=${encodeURIComponent(p.name)}&pData=${encodeURIComponent(b64)}`;
+      const url = `${window.location.origin}/?pName=${encodeURIComponent(p.name)}&pData=${encodeURIComponent(b64)}`;
       navigator.clipboard.writeText(url).then(() => {
         showToast('Playlist link copied!', 'ph ph-link');
       });
@@ -1341,7 +1341,7 @@ export function initUI() {
   const execShare = () => {
     const s = Player.getCurrentSong();
     if (!s) { showToast('No song selected', 'ph ph-warning-circle'); return; }
-    const url = `https://musicssr.ajisth007.workers.dev/track/${s.id}`;
+    const url = `${window.location.origin}/track/${s.id}`;
     navigator.clipboard.writeText(url).then(() => showToast('Link copied!', 'ph ph-link'));
   };
   $('#player-share-btn')?.addEventListener('click', execShare);
