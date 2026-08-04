@@ -1,0 +1,259 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Outfit:wght@500;600;700;800;900&family=Grandstander:wght@600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* 1. Bubblegum (Light Neubrutalism) UI Palette */
+:root {
+  --bg-primary: #FFFDF5;
+  --bg-secondary: #FFFFFF;
+  --bg-tertiary: #FFF0F5;
+  --text-primary: #1E1B4B;
+  --text-muted: #475569;
+  --accent-primary: #FF9EAA;
+  --accent-secondary: #FF6B8B;
+  --accent-cyan: #38BDF8;
+  --accent-yellow: #FFD166;
+  --accent-purple: #C084FC;
+  --accent-emerald: #34D399;
+  --border-color: #000000;
+  --shadow-color: #000000;
+  --box-shadow-style: 4px 4px 0px #000000;
+  --box-shadow-hover: 7px 7px 0px #000000;
+  --card-bg: #FFFFFF;
+  --player-bg: #FF9EAA;
+  --ambient-primary: #FF9EAA;
+  --ambient-secondary: #38BDF8;
+  --glow-color: transparent;
+}
+
+/* 2. Sleek Dark Cartoon UI Palette (Clean, High-Contrast, Zero Neon Glow) */
+.dark {
+  --bg-primary: #0F172A;
+  --bg-secondary: #1E293B;
+  --bg-tertiary: #334155;
+  --text-primary: #F8FAFC;
+  --text-muted: #94A3B8;
+  --accent-primary: #EC4899;
+  --accent-secondary: #38BDF8;
+  --accent-cyan: #38BDF8;
+  --accent-yellow: #FACC15;
+  --accent-purple: #A855F7;
+  --accent-emerald: #34D399;
+  --border-color: #000000;
+  --shadow-color: #000000;
+  --box-shadow-style: 3.5px 3.5px 0px #000000;
+  --box-shadow-hover: 5.5px 5.5px 0px #000000;
+  --card-bg: #1E293B;
+  --player-bg: #1E293B;
+  --ambient-primary: transparent;
+  --ambient-secondary: transparent;
+  --glow-color: transparent;
+}
+
+html, body, #root {
+  overscroll-behavior: none;
+  overscroll-behavior-y: none;
+}
+
+body {
+  font-family: 'Fredoka', 'Grandstander', 'Outfit', sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  user-select: none;
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+/* Ambient Background Glow Backdrop */
+.ambient-bg-tint {
+  background: radial-gradient(circle at 35% 15%, var(--ambient-primary) 0%, transparent 60%),
+              radial-gradient(circle at 85% 85%, var(--ambient-secondary) 0%, transparent 65%);
+  opacity: 0.18;
+  filter: blur(50px);
+  transition: background 0.6s ease;
+}
+
+/* Tactile Neubrutalist & Neon Cyberpunk Card Utilities */
+.toon-box {
+  background-color: var(--card-bg);
+  border: 2px solid var(--border-color);
+  box-shadow: var(--box-shadow-style);
+  border-radius: 1rem;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, background-color 0.3s ease;
+}
+
+.toon-box:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--box-shadow-hover);
+}
+
+/* Tactile Arcade Buttons */
+.toon-button {
+  background-color: var(--accent-primary);
+  color: #000000;
+  border: 2px solid var(--border-color);
+  box-shadow: var(--box-shadow-style);
+  border-radius: 9999px;
+  font-weight: 800;
+  font-family: 'Fredoka', sans-serif;
+  min-height: 36px;
+  padding: 0.375rem 1rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.dark .toon-button {
+  color: #FFFFFF;
+}
+
+.toon-button:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--box-shadow-hover);
+}
+
+.toon-button:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px var(--shadow-color);
+}
+
+.toon-button-secondary {
+  background-color: var(--accent-secondary);
+  color: #FFFFFF;
+}
+
+.toon-button-cyan {
+  background-color: var(--accent-cyan);
+  color: #18181B;
+}
+
+.toon-button-purple {
+  background-color: var(--accent-purple);
+  color: #FFFFFF;
+}
+
+.toon-input {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 2px solid var(--border-color);
+  box-shadow: 2.5px 2.5px 0px var(--shadow-color);
+  border-radius: 0.875rem;
+  padding: 0.5rem 0.875rem;
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.toon-input:focus {
+  box-shadow: 4px 4px 0px var(--shadow-color);
+  transform: translate(-1px, -1px);
+}
+
+/* Sound Wave Equalizer Animation */
+@keyframes bar-wave-1 {
+  0%, 100% { height: 3px; }
+  50% { height: 14px; }
+}
+
+@keyframes bar-wave-2 {
+  0%, 100% { height: 14px; }
+  50% { height: 4px; }
+}
+
+@keyframes bar-wave-3 {
+  0%, 100% { height: 5px; }
+  50% { height: 16px; }
+}
+
+.animate-bar-1 { animation: bar-wave-1 0.65s ease-in-out infinite; }
+.animate-bar-2 { animation: bar-wave-2 0.45s ease-in-out infinite; }
+.animate-bar-3 { animation: bar-wave-3 0.75s ease-in-out infinite; }
+
+/* Prominent High-Contrast Range Slider Track & Thumb Styling */
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: #CBD5E1;
+  border: 1.5px solid var(--border-color);
+}
+
+.dark input[type="range"]::-webkit-slider-runnable-track {
+  background: #334155;
+  border: 1.5px solid #F8FAFC;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: var(--accent-secondary);
+  border: 2px solid var(--border-color);
+  box-shadow: 1.5px 1.5px 0px var(--shadow-color);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+}
+
+/* Keyframe animations */
+@keyframes toon-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes toon-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-10px) scale(1.04); }
+}
+
+@keyframes toon-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-7deg); }
+  75% { transform: rotate(7deg); }
+}
+
+@keyframes toon-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-spin-slow { animation: toon-spin 14s linear infinite; }
+.animate-bounce-slow { animation: toon-bounce 2.2s cubic-bezier(0.34, 1.56, 0.64, 1) infinite; }
+.animate-wiggle { animation: toon-wiggle 1.8s ease-in-out infinite; }
+.animate-shimmer { animation: toon-shimmer 2s infinite; }
+
+/* Equalizer bars for queue now-playing */
+@keyframes eq-bar-1 { 0%, 100% { height: 40%; } 50% { height: 100%; } }
+@keyframes eq-bar-2 { 0%, 100% { height: 80%; } 50% { height: 30%; } }
+@keyframes eq-bar-3 { 0%, 100% { height: 50%; } 50% { height: 90%; } }
+.animate-eq-1 { animation: eq-bar-1 0.8s ease-in-out infinite; }
+.animate-eq-2 { animation: eq-bar-2 0.6s ease-in-out infinite 0.15s; }
+.animate-eq-3 { animation: eq-bar-3 0.75s ease-in-out infinite 0.3s; }
+
+/* Scrollbar customization */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--accent-primary);
+  border-radius: 8px;
+}
+
