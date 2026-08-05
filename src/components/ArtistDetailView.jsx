@@ -13,7 +13,7 @@ export default function ArtistDetailView({ artistName, onBack }) {
   const { playSong } = useAudio();
   const { startBatchZipDownload } = useDownload();
   const { toggleFollowArtist, isArtistFollowed } = useLibrary();
-  
+
   const [artistInfo, setArtistInfo] = useState(null);
   const [songs, setSongs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -99,7 +99,7 @@ export default function ArtistDetailView({ artistName, onBack }) {
 
   return (
     <div className="space-y-6 pb-12 select-none">
-      
+
       {/* Back Button */}
       <motion.button
         whileHover={{ scale: 1.05, x: -2 }}
@@ -113,7 +113,7 @@ export default function ArtistDetailView({ artistName, onBack }) {
 
       {/* Official Verified Artist Hero Banner */}
       <div className="toon-box p-5 sm:p-6 bg-[var(--bg-secondary)] border-2 sm:border-2.5 border-[var(--border-color)] shadow-[4px_4px_0px_var(--shadow-color)] flex flex-col sm:flex-row items-center gap-5 rounded-2xl">
-        
+
         {/* Official Artist Avatar Image */}
         <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-full border-3 border-[var(--border-color)] shadow-[4px_4px_0px_var(--shadow-color)] overflow-hidden shrink-0 bg-gradient-to-tr from-amber-400 to-pink-500 flex items-center justify-center">
           {artistInfo?.image ? (
@@ -146,11 +146,10 @@ export default function ArtistDetailView({ artistName, onBack }) {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleToggleFollow}
-              className={`px-3.5 py-1.5 text-xs rounded-xl font-black border-2 border-black flex items-center gap-1.5 transition-all ${
-                isFollowed
+              className={`px-3.5 py-1.5 text-xs rounded-xl font-black border-2 border-black flex items-center gap-1.5 transition-all ${isFollowed
                   ? 'bg-emerald-400 text-stone-900 shadow-[2px_2px_0px_#000]'
                   : 'bg-amber-400 text-stone-900 shadow-[2px_2px_0px_#000] hover:bg-amber-300'
-              }`}
+                }`}
             >
               {isFollowed ? (
                 <>
