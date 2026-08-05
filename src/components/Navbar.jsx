@@ -37,7 +37,7 @@ export default function Navbar({ activeTab, setActiveTab, searchQuery, setSearch
   };
 
   return (
-    <header className="sticky top-0 z-40 px-2 sm:px-4 py-1.5 sm:py-2 bg-[var(--bg-secondary)]/90 backdrop-blur-md border-b-2 sm:border-b-2.5 border-[var(--border-color)] shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition-colors duration-300 select-none">
+    <header className="sticky top-0 z-40 px-2 sm:px-4 pb-1.5 sm:pb-2 pt-[calc(0.375rem+env(safe-area-inset-top,0px))] bg-[var(--bg-secondary)]/90 backdrop-blur-md border-b-2 sm:border-b-2.5 border-[var(--border-color)] shadow-[0_2px_8px_rgba(0,0,0,0.1)] transition-colors duration-300 select-none">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-3">
         
         {/* Brand Logo */}
@@ -47,8 +47,21 @@ export default function Navbar({ activeTab, setActiveTab, searchQuery, setSearch
           whileTap={{ scale: 0.97 }}
           className="flex items-center gap-1.5 sm:gap-2 cursor-pointer group select-none shrink-0"
         >
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden shadow-[2px_2px_0px_var(--shadow-color)] flex items-center justify-center group-hover:rotate-6 transition-transform duration-200 shrink-0">
-            <img src="/logo.svg" alt="Clash Music Logo" className="w-full h-full object-contain" />
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden shadow-[2px_2px_0px_var(--shadow-color)] flex items-center justify-center group-hover:rotate-6 transition-transform duration-200 shrink-0 bg-amber-400 dark:bg-pink-500 relative">
+            <img 
+              src="/logo.png" 
+              alt="Clash Music Logo" 
+              className="w-full h-full object-cover" 
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                if (e.currentTarget.nextElementSibling) {
+                  e.currentTarget.nextElementSibling.style.display = 'flex';
+                }
+              }}
+            />
+            <div className="hidden w-full h-full items-center justify-center bg-amber-400 dark:bg-pink-500">
+              <Music className="w-5 h-5 text-stone-900 dark:text-white" strokeWidth={2.5} />
+            </div>
           </div>
           <div className="hidden xs:block">
             <h1 className="text-sm sm:text-lg font-black tracking-wider text-[var(--text-primary)] leading-none flex items-center gap-1 font-['Grandstander']">

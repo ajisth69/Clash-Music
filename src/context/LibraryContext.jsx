@@ -99,13 +99,13 @@ export function LibraryProvider({ children }) {
     const { fileBlob, downloadUrls, ...clean } = song;
     // Strip base64 data URIs from coverUrl (keep only http URLs)
     if (clean.coverUrl && clean.coverUrl.startsWith('data:')) {
-      clean.coverUrl = '/logo.svg';
+      clean.coverUrl = '/logo.png';
     }
     // Sanitize image array — keep only small URL strings
     if (Array.isArray(clean.image)) {
       clean.image = clean.image.map(img => {
         if (typeof img === 'object' && img.url) {
-          return { url: img.url.startsWith('data:') ? '/logo.svg' : img.url };
+          return { url: img.url.startsWith('data:') ? '/logo.png' : img.url };
         }
         return img;
       });

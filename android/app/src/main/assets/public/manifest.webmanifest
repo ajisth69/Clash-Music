@@ -11,12 +11,6 @@
   "categories": ["music", "entertainment", "utilities"],
   "icons": [
     {
-      "src": "/logo.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
       "src": "/logo.png",
       "sizes": "512x512",
       "type": "image/png",
@@ -28,13 +22,13 @@
       "name": "Search Music",
       "short_name": "Search",
       "url": "/?tab=search",
-      "icons": [{ "src": "/logo.svg", "sizes": "any" }]
+      "icons": [{ "src": "/logo.png", "sizes": "512x512" }]
     },
     {
       "name": "Offline Music",
       "short_name": "Offline",
       "url": "/?tab=offline",
-      "icons": [{ "src": "/logo.svg", "sizes": "any" }]
+      "icons": [{ "src": "/logo.png", "sizes": "512x512" }]
     }
   ]
 }

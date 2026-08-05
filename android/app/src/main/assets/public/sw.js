@@ -5,9 +5,8 @@ const PRECACHE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/favicon.svg',
-  '/logo.svg',
-  '/logo.png'
+  '/logo.png',
+  '/favicon.png'
 ];
 
 // Install Event - Precache App Shell

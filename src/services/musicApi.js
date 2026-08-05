@@ -23,7 +23,7 @@ export function normalizeArtistKey(name) {
 
 // Universal Helper to safely extract valid image URLs (handles arrays, string URLs, coverUrls, and fallbacks)
 export function getDisplayImage(item) {
-  if (!item) return '/logo.svg';
+  if (!item) return '/logo.png';
   if (typeof item.coverUrl === 'string' && item.coverUrl && !item.coverUrl.includes('[object')) return item.coverUrl;
   if (typeof item.image === 'string' && item.image && !item.image.includes('[object')) return item.image;
   if (Array.isArray(item.image) && item.image.length > 0) {
@@ -31,7 +31,7 @@ export function getDisplayImage(item) {
     if (typeof best === 'string' && !best.includes('[object')) return best;
     if (best && typeof best.url === 'string' && best.url && !best.url.includes('[object')) return best.url;
   }
-  return '/logo.svg';
+  return '/logo.png';
 }
 
 // Format track output for app consumption

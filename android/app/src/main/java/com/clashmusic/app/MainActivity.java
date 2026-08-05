@@ -31,70 +31,128 @@ import java.io.OutputStream;
 public class MainActivity extends BridgeActivity {
 
     public static JSObject pendingAudioIntent = null;
+    public static java.util.Set<String> recentlySavedUris = java.util.Collections.synchronizedSet(new java.util.HashSet<String>());
+    public static long lastInternalSaveTimestamp = 0;
 
     @CapacitorPlugin(name = "PublicDownloads")
     public static class PublicDownloadsPlugin extends Plugin {
+
+        @PluginMethod
+        public void saveChunkedToPublicDownloads(PluginCall call) {
+            String fileName = call.getString("fileName");
+            String chunkBase64 = call.getString("chunkBase64");
+            Boolean isFirst = call.getBoolean("isFirst", false);
+            Boolean isLast = call.getBoolean("isLast", false);
+            String mimeType = call.getString("mimeType", "application/octet-stream");
+
+            if (fileName == null || chunkBase64 == null) {
+                call.reject("Missing required parameters: fileName or chunkBase64");
+                return;
+            }
+
+            try {
+                String safeName = fileName.replaceAll("[^a-zA-Z0-9._-]", "_");
+                File tempFile = new File(getContext().getCacheDir(), "dl_temp_" + safeName);
+
+                if (isFirst && tempFile.exists()) {
+                    tempFile.delete();
+                }
+
+                byte[] chunkBytes = Base64.decode(chunkBase64, Base64.DEFAULT);
+
+                FileOutputStream fos = new FileOutputStream(tempFile, true);
+                fos.write(chunkBytes);
+                fos.flush();
+                fos.close();
+
+                if (isLast) {
+                    lastInternalSaveTimestamp = System.currentTimeMillis();
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        ContentValues values = new ContentValues();
+                        values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
+                        values.put(MediaStore.MediaColumns.MIME_TYPE, mimeType);
+                        values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+
+                        Uri uri = getContext().getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                        if (uri != null) {
+                            OutputStream out = getContext().getContentResolver().openOutputStream(uri);
+                            java.io.FileInputStream in = new java.io.FileInputStream(tempFile);
+                            byte[] buffer = new byte[65536];
+                            int bytesRead;
+                            while ((bytesRead = in.read(buffer)) != -1) {
+                                out.write(buffer, 0, bytesRead);
+                            }
+                            in.close();
+                            if (out != null) {
+                                out.flush();
+                                out.close();
+                            }
+                            tempFile.delete();
+
+                            recentlySavedUris.add(uri.toString());
+
+                            JSObject ret = new JSObject();
+                            ret.put("success", true);
+                            ret.put("uri", uri.toString());
+                            call.resolve(ret);
+                            return;
+                        }
+                    } else {
+                        File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                        if (!downloadsDir.exists()) {
+                            downloadsDir.mkdirs();
+                        }
+                        File destFile = new File(downloadsDir, fileName);
+                        java.io.FileInputStream in = new java.io.FileInputStream(tempFile);
+                        FileOutputStream out = new FileOutputStream(destFile);
+                        byte[] buffer = new byte[65536];
+                        int bytesRead;
+                        while ((bytesRead = in.read(buffer)) != -1) {
+                            out.write(buffer, 0, bytesRead);
+                        }
+                        in.close();
+                        out.flush();
+                        out.close();
+                        tempFile.delete();
+
+                        recentlySavedUris.add(destFile.getAbsolutePath());
+                        recentlySavedUris.add(Uri.fromFile(destFile).toString());
+
+                        android.media.MediaScannerConnection.scanFile(
+                            getContext(),
+                            new String[]{destFile.getAbsolutePath()},
+                            new String[]{mimeType},
+                            null
+                        );
+
+                        JSObject ret = new JSObject();
+                        ret.put("success", true);
+                        ret.put("path", destFile.getAbsolutePath());
+                        call.resolve(ret);
+                        return;
+                    }
+                }
+
+                JSObject ret = new JSObject();
+                ret.put("success", true);
+                ret.put("chunkSaved", true);
+                call.resolve(ret);
+            } catch (Exception e) {
+                call.reject("Chunk save error: " + e.getMessage());
+            }
+        }
+
         @PluginMethod
         public void saveToPublicDownloads(PluginCall call) {
             String fileName = call.getString("fileName");
             String base64Data = call.getString("base64Data");
             String mimeType = call.getString("mimeType", "audio/mpeg");
 
-            if (fileName == null || base64Data == null) {
-                call.reject("Missing fileName or base64Data");
-                return;
-            }
-
-            try {
-                byte[] fileBytes = Base64.decode(base64Data, Base64.DEFAULT);
-
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    ContentValues values = new ContentValues();
-                    values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
-                    values.put(MediaStore.MediaColumns.MIME_TYPE, mimeType);
-                    values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
-
-                    Uri uri = getContext().getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
-                    if (uri != null) {
-                        OutputStream out = getContext().getContentResolver().openOutputStream(uri);
-                        if (out != null) {
-                            out.write(fileBytes);
-                            out.close();
-                        }
-                        JSObject ret = new JSObject();
-                        ret.put("success", true);
-                        ret.put("uri", uri.toString());
-                        call.resolve(ret);
-                        return;
-                    }
-                } else {
-                    File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-                    if (!downloadsDir.exists()) {
-                        downloadsDir.mkdirs();
-                    }
-                    File file = new File(downloadsDir, fileName);
-                    FileOutputStream out = new FileOutputStream(file);
-                    out.write(fileBytes);
-                    out.close();
-
-                    android.media.MediaScannerConnection.scanFile(
-                        getContext(),
-                        new String[]{file.getAbsolutePath()},
-                        new String[]{mimeType},
-                        null
-                    );
-
-                    JSObject ret = new JSObject();
-                    ret.put("success", true);
-                    ret.put("path", file.getAbsolutePath());
-                    call.resolve(ret);
-                    return;
-                }
-            } catch (Exception e) {
-                call.reject("Failed to save file to system Downloads: " + e.getMessage());
-                return;
-            }
-            call.reject("Could not create download entry");
+            call.getData().put("chunkBase64", base64Data);
+            call.getData().put("isFirst", true);
+            call.getData().put("isLast", true);
+            call.getData().put("mimeType", mimeType);
+            saveChunkedToPublicDownloads(call);
         }
     }
 

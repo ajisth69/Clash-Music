@@ -6,6 +6,8 @@ import { useAudio } from '../context/AudioContext';
 import { useDownload } from '../context/DownloadContext';
 import { playPopSfx, playLikeSfx } from '../services/soundEffects';
 import { shareItem } from '../services/shareService';
+import { fetchSpotifyTracks, matchTracksToApi } from '../services/spotifyImport';
+import { fetchPlaylist } from '../services/playlistDb';
 import SongCard from './SongCard';
 import FileImportModal from './FileImportModal';
 
@@ -30,6 +32,8 @@ export default function LibraryView({ onSelectArtist, onSelectAlbum, initialPlay
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newPlName, setNewPlName] = useState('');
   const [newPlDesc, setNewPlDesc] = useState('');
+  const [newPlLink, setNewPlLink] = useState('');
+  const [isCreatingPl, setIsCreatingPl] = useState(false);
 
   // File Import State
   const [showFileImportModal, setShowFileImportModal] = useState(false);
@@ -45,7 +49,7 @@ export default function LibraryView({ onSelectArtist, onSelectAlbum, initialPlay
       const res = await shareItem({ type: 'playlist', id: playlist.id, name: playlist.name, description: playlist.description, tracks: playlist.tracks });
       if (res.success) {
         setSharedPlId(playlist.id);
-        setTimeout(() => setSharedPlId(null), 2000);
+        setTimeout(() => setSharedPlId(null), 2500);
       }
     } catch (err) {
       alert('Failed to share playlist: ' + err.message);
@@ -54,16 +58,50 @@ export default function LibraryView({ onSelectArtist, onSelectAlbum, initialPlay
     }
   };
 
-  const handleCreateSubmit = (e) => {
+  const handleCreateSubmit = async (e) => {
     e.preventDefault();
     if (!newPlName.trim()) return;
     playLikeSfx();
-    const pl = createPlaylist(newPlName, newPlDesc);
-    setNewPlName('');
-    setNewPlDesc('');
-    setShowCreateModal(false);
-    setSelectedPlaylistId(pl.id);
-    setActiveTab('playlists');
+
+    setIsCreatingPl(true);
+    try {
+      const pl = createPlaylist(newPlName, newPlDesc);
+
+      // Optional: Import songs from pasted Link or Playlist ID
+      const rawLink = newPlLink.trim();
+      if (rawLink) {
+        if (rawLink.includes('spotify.com') || rawLink.includes('spotify:playlist')) {
+          const spotData = await fetchSpotifyTracks(rawLink);
+          if (spotData && spotData.tracks && spotData.tracks.length > 0) {
+            const matchedSongs = await matchTracksToApi(spotData.tracks);
+            matchedSongs.forEach(song => addSongToPlaylist(pl.id, song));
+          }
+        } else {
+          let plId = rawLink;
+          if (rawLink.includes('playlist=')) {
+            try {
+              const u = new URL(rawLink.startsWith('http') ? rawLink : `https://${rawLink}`);
+              plId = u.searchParams.get('playlist') || plId;
+            } catch {}
+          }
+          const remotePl = await fetchPlaylist(plId);
+          if (remotePl && remotePl.tracks && remotePl.tracks.length > 0) {
+            remotePl.tracks.forEach(song => addSongToPlaylist(pl.id, song));
+          }
+        }
+      }
+
+      setNewPlName('');
+      setNewPlDesc('');
+      setNewPlLink('');
+      setShowCreateModal(false);
+      setSelectedPlaylistId(pl.id);
+      setActiveTab('playlists');
+    } catch (err) {
+      console.warn('Error fetching songs for new playlist from link:', err);
+    } finally {
+      setIsCreatingPl(false);
+    }
   };
 
   const handleDownloadBatch = (title, tracks) => {
@@ -534,19 +572,35 @@ export default function LibraryView({ onSelectArtist, onSelectAlbum, initialPlay
                 />
               </div>
 
+              <div>
+                <label className="block text-xs font-black uppercase text-[var(--text-muted)] mb-1">
+                  Paste Link or Playlist ID (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Paste Spotify URL or Playlist ID to auto-populate tracks..."
+                  value={newPlLink}
+                  onChange={(e) => setNewPlLink(e.target.value)}
+                  className="toon-input w-full text-xs"
+                />
+              </div>
+
               <div className="flex items-center justify-end gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
+                  disabled={isCreatingPl}
                   className="px-4 py-2 rounded-2xl border-2 border-[var(--border-color)] font-bold text-xs"
                 >
                   CANCEL
                 </button>
                 <button
                   type="submit"
-                  className="toon-button toon-button-pink px-5 py-2 text-xs"
+                  disabled={isCreatingPl}
+                  className="toon-button toon-button-pink px-5 py-2 text-xs flex items-center gap-1.5"
                 >
-                  CREATE MIX
+                  {isCreatingPl ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                  <span>{isCreatingPl ? 'IMPORTING...' : 'CREATE MIX'}</span>
                 </button>
               </div>
             </form>

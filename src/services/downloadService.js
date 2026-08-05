@@ -18,7 +18,7 @@ function sanitizeFilename(name) {
  * Helper to fetch a remote image URL and convert it to a persistent base64 data URL for offline storage
  */
 async function fetchImageAsBase64(url) {
-  if (!url || typeof url !== 'string' || url.startsWith('data:') || url.startsWith('blob:') || url.includes('/logo.svg')) {
+  if (!url || typeof url !== 'string' || url.startsWith('data:') || url.startsWith('blob:') || url.includes('/logo.png')) {
     return url;
   }
   try {
@@ -64,9 +64,9 @@ async function registerDownloadedTrack(track, mp3Blob, cleanTitle, cleanArtist) 
       fileSize: (mp3Blob.size / (1024 * 1024)).toFixed(2) + ' MB',
       duration: songDuration,
       isLocal: true,
-      coverUrl: coverUrl && coverUrl !== '/logo.svg' ? coverUrl : null,
-      hasCover: !!(coverUrl && coverUrl !== '/logo.svg'),
-      image: coverUrl ? [{ url: coverUrl }, { url: coverUrl }] : [{ url: '/logo.svg' }],
+      coverUrl: coverUrl && coverUrl !== '/logo.png' ? coverUrl : null,
+      hasCover: !!(coverUrl && coverUrl !== '/logo.png'),
+      image: coverUrl ? [{ url: coverUrl }, { url: coverUrl }] : [{ url: '/logo.png' }],
       addedAt: Date.now()
     };
     await saveLocalSongs([localRecord]);
@@ -79,46 +79,53 @@ async function registerDownloadedTrack(track, mp3Blob, cleanTitle, cleanArtist) 
  * Saves a Blob file directly into Android system MediaStore Downloads folder (on native)
  * or via browser download prompt (on web).
  */
-async function saveBlobFile(blob, fileName) {
+async function saveBlobFile(blob, fileName, onProgress = null) {
   if (Capacitor.isNativePlatform()) {
     try {
-      const reader = new FileReader();
-      const base64Promise = new Promise((resolve, reject) => {
-        reader.onloadend = () => {
-          const base64data = reader.result.split(',')[1];
-          resolve(base64data);
-        };
-        reader.onerror = reject;
-      });
-      reader.readAsDataURL(blob);
-      const base64Data = await base64Promise;
-
+      const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB chunks
+      const totalSize = blob.size;
+      const totalChunks = Math.ceil(totalSize / CHUNK_SIZE);
       const mimeType = fileName.endsWith('.zip') ? 'application/zip' : 'audio/mpeg';
 
-      // 1. Try native MediaStore Public Downloads Plugin (Guarantees File Manager visibility)
-      try {
-        const res = await PublicDownloads.saveToPublicDownloads({
+      for (let i = 0; i < totalChunks; i++) {
+        const start = i * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, totalSize);
+        const chunkBlob = blob.slice(start, end);
+
+        const chunkBase64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const res = reader.result;
+            const base64 = typeof res === 'string' && res.includes(',') ? res.split(',')[1] : res;
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(chunkBlob);
+        });
+
+        const isFirst = i === 0;
+        const isLast = i === totalChunks - 1;
+
+        if (onProgress && totalChunks > 1) {
+          const writePct = 85 + Math.round(((i + 1) / totalChunks) * 15);
+          onProgress(writePct, `Saving ${fileName} to system Downloads (${i + 1}/${totalChunks})...`);
+        }
+
+        const res = await PublicDownloads.saveChunkedToPublicDownloads({
           fileName,
-          base64Data,
+          chunkBase64,
+          isFirst,
+          isLast,
           mimeType,
         });
-        if (res && (res.success || res.uri || res.path)) {
+
+        if (isLast && res && (res.success || res.uri || res.path)) {
           return;
         }
-      } catch (nativeErr) {
-        console.warn('Native MediaStore Public Downloads plugin failed, falling back to Filesystem:', nativeErr);
       }
-
-      // 2. Fallback to Capacitor Filesystem Directory.Downloads
-      await Filesystem.writeFile({
-        path: fileName,
-        data: base64Data,
-        directory: Directory.Downloads,
-        recursive: true,
-      });
       return;
     } catch (err) {
-      console.warn('Native Android Downloads folder save error, falling back to web saveAs:', err);
+      console.warn('Native Android chunked Downloads folder save error, falling back to web saveAs:', err);
     }
   }
 
@@ -146,7 +153,7 @@ export async function downloadSingleSong(track, onProgress = null, abortSignal =
     const mp3Blob = new Blob([arrayBuffer], { type: 'audio/mpeg' });
 
     if (onProgress) onProgress(80, 'Saving MP3 to Downloads & Local Library...');
-    await saveBlobFile(mp3Blob, fileName);
+    await saveBlobFile(mp3Blob, fileName, onProgress);
     await registerDownloadedTrack(track, mp3Blob, cleanTitle, cleanArtist);
 
     if (onProgress) onProgress(100, 'Saved to Downloads folder & Local Library!');
@@ -192,7 +199,7 @@ export async function downloadPlaylistAsZip(playlistName, tracks, onProgress = n
     const trackFileName = `${i + 1}. ${cleanTitle} - ${cleanArtist}.mp3`;
 
     if (onProgress) {
-      const pct = Math.round((completed / tracks.length) * 85);
+      const pct = Math.round((completed / tracks.length) * 70);
       onProgress(pct, `Packaging MP3 track ${i + 1} of ${tracks.length}: ${track.name}`);
     }
 
@@ -219,14 +226,15 @@ export async function downloadPlaylistAsZip(playlistName, tracks, onProgress = n
     throw new Error('Download cancelled');
   }
 
-  if (onProgress) onProgress(90, 'Compressing MP3 ZIP archive...');
-  const zipBlob = await zip.generateAsync({ type: 'blob' });
+  if (onProgress) onProgress(75, 'Packaging ZIP archive...');
+  // Use compression: 'STORE' to bypass heavy CPU/RAM re-compression on already compressed MP3 files
+  const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
 
   if (abortSignal?.aborted) {
     throw new Error('Download cancelled');
   }
 
   const zipFileName = `${folderName}.zip`;
-  await saveBlobFile(zipBlob, zipFileName);
+  await saveBlobFile(zipBlob, zipFileName, onProgress);
   if (onProgress) onProgress(100, 'MP3 ZIP Archive saved to Downloads!');
 }

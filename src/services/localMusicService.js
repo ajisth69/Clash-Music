@@ -721,7 +721,7 @@ export async function getLocalSongs() {
             streamUrl: activeUrl,
             downloadUrl: activeUrl,
             coverUrl: coverUrl,
-            image: coverUrl ? [{ url: coverUrl }, { url: coverUrl }] : (song.image || [{ url: '/logo.svg' }]),
+            image: coverUrl ? [{ url: coverUrl }, { url: coverUrl }] : (song.image || [{ url: '/logo.png' }]),
           });
         }
       }
@@ -763,7 +763,7 @@ export function ensureValidAudioUrl(song) {
     streamUrl: activeUrl,
     downloadUrl: activeUrl,
     coverUrl: coverUrl,
-    image: coverUrl ? [{ url: coverUrl }, { url: coverUrl }] : (song.image || [{ url: '/logo.svg' }]),
+    image: coverUrl ? [{ url: coverUrl }, { url: coverUrl }] : (song.image || [{ url: '/logo.png' }]),
   };
 }
 
@@ -830,7 +830,7 @@ export async function scanFileObjects(fileList, dirName = 'Local Folder') {
       const duration = await getAudioDuration(file);
       const objectUrl = createPlayableBlobUrl(file, file.name);
 
-      const coverArt = tags.coverUrl || '/logo.svg';
+      const coverArt = tags.coverUrl || '/logo.png';
 
       let bitrateText = tags.isFlac ? 'FLAC Lossless' : '320 kbps MP3';
       if (!tags.isFlac && duration > 0 && file.size > 0) {
