@@ -43,17 +43,9 @@ function MainApp() {
   const [isQueueOpen, setIsQueueOpen] = useState(false);
   const [importedPlaylistId, setImportedPlaylistId] = useState(null);
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
-  const [isAppLaunching, setIsAppLaunching] = useState(true);
+  const [isAppLaunching, setIsAppLaunching] = useState(false);
   const [isOnline, setIsOnline] = useState(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [navHistory, setNavHistory] = useState([]);
-
-  // Auto hide retro splash after 1.3 seconds launch animation
-  useEffect(() => {
-    const launchTimer = setTimeout(() => {
-      setIsAppLaunching(false);
-    }, 1300);
-    return () => clearTimeout(launchTimer);
-  }, []);
 
   const changeTabWithHistory = (newTab, options = {}) => {
     if (newTab === activeTab && !options.artist && !options.album) return;
@@ -308,86 +300,7 @@ function MainApp() {
   return (
     <div className="min-h-screen flex flex-col relative select-none">
       
-      {/* Retro Playful Opening Splash Screen Overlay */}
-      <AnimatePresence>
-        {isAppLaunching && (
-          <motion.div
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0, scale: 1.05 }}
-            transition={{ duration: 0.5, ease: 'easeInOut' }}
-            className="fixed inset-0 z-[200] bg-[#0b0f19] flex flex-col items-center justify-center p-4 select-none overflow-hidden"
-          >
-            {/* Retro Ambient Radial Background Glow */}
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-pink-500/20 via-cyan-500/10 to-transparent pointer-events-none" />
 
-            {/* Floating Retro Playful Vector Rings */}
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 20, ease: 'linear', repeat: Infinity }}
-              className="absolute w-72 h-72 rounded-full border-2 border-dashed border-pink-500/20 pointer-events-none"
-            />
-            <motion.div
-              animate={{ rotate: -360 }}
-              transition={{ duration: 16, ease: 'linear', repeat: Infinity }}
-              className="absolute w-96 h-96 rounded-full border-2 border-dashed border-cyan-400/20 pointer-events-none"
-            />
-
-            {/* Center Content Box */}
-            <div className="relative z-10 flex flex-col items-center gap-4 text-center max-w-sm px-4">
-              
-              {/* Pure Borderless Background-less App Logo with Spring Pulse */}
-              <motion.div
-                initial={{ scale: 0.5, rotate: -15, opacity: 0 }}
-                animate={{ scale: 1, rotate: 0, opacity: 1 }}
-                transition={{ type: 'spring', stiffness: 260, damping: 18 }}
-                className="relative w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center drop-shadow-[0_0_25px_rgba(244,114,182,0.4)]"
-              >
-                <img
-                  src="/logo.svg"
-                  alt="Clash Music Logo"
-                  className="w-full h-full object-contain filter drop-shadow-[3px_3px_0px_#000]"
-                />
-              </motion.div>
-
-              {/* Retro Title & Tagline */}
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.15, duration: 0.4 }}
-                className="space-y-1"
-              >
-                <h1 className="text-2xl sm:text-3xl font-black font-['Grandstander'] tracking-wider text-white flex items-center justify-center gap-1.5 drop-shadow-[2px_2px_0px_#000]">
-                  CLASH <span className="text-pink-500">MUSIC</span>
-                  <Sparkles className="w-5 h-5 text-amber-400 animate-spin" style={{ animationDuration: '4s' }} />
-                </h1>
-                <p className="text-[10px] sm:text-xs font-black text-cyan-400 uppercase tracking-widest">
-                  Retro Playful Sound System
-                </p>
-              </motion.div>
-
-              {/* Animated Retro Toon-Box Loading Progress Bar */}
-              <motion.div
-                initial={{ opacity: 0, width: '0%' }}
-                animate={{ opacity: 1, width: '100%' }}
-                transition={{ delay: 0.25, duration: 0.5 }}
-                className="w-48 h-3.5 bg-stone-900 border-2 border-amber-400 rounded-full p-0.5 shadow-[2px_2px_0px_#000] relative overflow-hidden"
-              >
-                <motion.div
-                  initial={{ x: '-100%' }}
-                  animate={{ x: '0%' }}
-                  transition={{ duration: 1.1, ease: 'easeInOut' }}
-                  className="w-full h-full bg-gradient-to-r from-pink-500 via-amber-400 to-cyan-400 rounded-full shadow-[1px_1px_0px_#000]"
-                />
-              </motion.div>
-
-              <p className="text-[9px] font-black text-stone-400 tracking-wider animate-pulse">
-                READYING THE RETRO TUNES...
-              </p>
-
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Global Loading Overlay for Deep Links */}
       {isGlobalLoading && (
