@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, ListMusic, History, Plus, Download, Trash2, Play, Sparkles, Mic2, UserCheck, Disc, BookmarkCheck, Share2, Loader2, Check } from 'lucide-react';
+import { Heart, ListMusic, History, Plus, Download, Trash2, Play, Sparkles, Mic2, UserCheck, Disc, BookmarkCheck, Share2, Loader2, Check, Link2 } from 'lucide-react';
 import { useLibrary } from '../context/LibraryContext';
 import { useAudio } from '../context/AudioContext';
 import { useDownload } from '../context/DownloadContext';
@@ -34,6 +34,10 @@ export default function LibraryView({ onSelectArtist, onSelectAlbum, initialPlay
   const [newPlDesc, setNewPlDesc] = useState('');
   const [newPlLink, setNewPlLink] = useState('');
   const [isCreatingPl, setIsCreatingPl] = useState(false);
+
+  // Quick Paste Link / ID State
+  const [quickLinkInput, setQuickLinkInput] = useState('');
+  const [isImportingQuickLink, setIsImportingQuickLink] = useState(false);
 
   // File Import State
   const [showFileImportModal, setShowFileImportModal] = useState(false);
@@ -101,6 +105,54 @@ export default function LibraryView({ onSelectArtist, onSelectAlbum, initialPlay
       console.warn('Error fetching songs for new playlist from link:', err);
     } finally {
       setIsCreatingPl(false);
+    }
+  };
+
+  const handleQuickLinkImport = async (e) => {
+    e.preventDefault();
+    const rawVal = quickLinkInput.trim();
+    if (!rawVal || isImportingQuickLink) return;
+
+    playLikeSfx();
+    setIsImportingQuickLink(true);
+
+    try {
+      if (rawVal.includes('spotify.com') || rawVal.includes('spotify:playlist')) {
+        const spotData = await fetchSpotifyTracks(rawVal);
+        if (spotData && spotData.tracks && spotData.tracks.length > 0) {
+          const matchedSongs = await matchTracksToApi(spotData.tracks);
+          const newPl = createPlaylist(spotData.name || 'Spotify Playlist', 'Imported from Spotify Link');
+          matchedSongs.forEach(song => addSongToPlaylist(newPl.id, song));
+          setSelectedPlaylistId(newPl.id);
+        } else {
+          alert('Could not find tracks in Spotify link.');
+        }
+      } else {
+        let plId = rawVal;
+        if (rawVal.includes('playlist=')) {
+          try {
+            const u = new URL(rawVal.startsWith('http') ? rawVal : `https://${rawVal}`);
+            plId = u.searchParams.get('playlist') || plId;
+          } catch {}
+        } else if (rawVal.includes('/')) {
+          const parts = rawVal.split('/');
+          plId = parts[parts.length - 1];
+        }
+
+        const remotePl = await fetchPlaylist(plId);
+        if (remotePl && remotePl.tracks && remotePl.tracks.length > 0) {
+          const newPl = createPlaylist(remotePl.name || 'Shared Playlist', remotePl.description || 'Imported via Link / ID');
+          remotePl.tracks.forEach(song => addSongToPlaylist(newPl.id, song));
+          setSelectedPlaylistId(newPl.id);
+        } else {
+          alert('Could not find playlist with the provided Link or ID.');
+        }
+      }
+      setQuickLinkInput('');
+    } catch (err) {
+      alert('Import failed: ' + (err.message || 'Unknown error'));
+    } finally {
+      setIsImportingQuickLink(false);
     }
   };
 
@@ -364,8 +416,8 @@ export default function LibraryView({ onSelectArtist, onSelectAlbum, initialPlay
                 onClick={() => { playPopSfx(); setShowFileImportModal(true); }}
                 className="toon-button toon-button-purple px-3 py-1.5 text-xs flex items-center gap-1.5"
               >
-                <Plus className="w-3.5 h-3.5" />
-                UPLOAD FILE
+                <Link2 className="w-3.5 h-3.5" />
+                IMPORT / PASTE LINK
               </motion.button>
               
               <motion.button
@@ -378,6 +430,37 @@ export default function LibraryView({ onSelectArtist, onSelectAlbum, initialPlay
                 NEW PLAYLIST
               </motion.button>
             </div>
+          </div>
+
+          {/* Prominent Quick Paste Link or Playlist ID Bar */}
+          <div className="toon-box p-3.5 sm:p-4 bg-[var(--bg-secondary)] rounded-2xl border-2 border-black space-y-2 shadow-[3px_3px_0px_#000]">
+            <div className="flex items-center gap-2">
+              <Link2 className="w-5 h-5 text-amber-500 shrink-0" strokeWidth={2.5} />
+              <h4 className="font-black text-xs sm:text-sm text-[var(--text-primary)] font-['Grandstander']">
+                Import Playlist from Link or Playlist ID
+              </h4>
+            </div>
+            <form onSubmit={handleQuickLinkImport} className="flex flex-col sm:flex-row items-center gap-2">
+              <input
+                type="text"
+                placeholder="Paste Spotify URL, Clash Link, or Playlist ID (e.g. 7A1bC...)"
+                value={quickLinkInput}
+                onChange={(e) => setQuickLinkInput(e.target.value)}
+                className="toon-input flex-1 w-full text-xs font-bold"
+              />
+              <button
+                type="submit"
+                disabled={isImportingQuickLink || !quickLinkInput.trim()}
+                className="toon-button toon-button-amber px-4 py-2 text-xs w-full sm:w-auto shrink-0 flex items-center justify-center gap-1.5 disabled:opacity-50"
+              >
+                {isImportingQuickLink ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Link2 className="w-3.5 h-3.5" />
+                )}
+                <span>{isImportingQuickLink ? 'IMPORTING...' : 'IMPORT PLAYLIST'}</span>
+              </button>
+            </form>
           </div>
 
           {selectedPlaylist ? (
