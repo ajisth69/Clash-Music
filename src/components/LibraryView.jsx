@@ -12,7 +12,7 @@ import SongCard from './SongCard';
 import FileImportModal from './FileImportModal';
 
 export default function LibraryView({ onSelectArtist, onSelectAlbum, initialPlaylistId }) {
-  const { likedSongs, followedArtists, toggleFollowArtist, savedAlbums, toggleSaveAlbum, playlists, createPlaylist, deletePlaylist, removeSongFromPlaylist, history } = useLibrary();
+  const { likedSongs, followedArtists, toggleFollowArtist, savedAlbums, toggleSaveAlbum, playlists, createPlaylist, deletePlaylist, removeSongFromPlaylist, addSongToPlaylist, history } = useLibrary();
   const { playSong } = useAudio();
   const { startBatchZipDownload } = useDownload();
 
