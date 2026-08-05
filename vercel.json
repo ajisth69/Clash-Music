@@ -1,0 +1,15 @@
+{
+  "rewrites": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(bot|telegram|whatsapp|discord|facebook|slurp|facebookexternalhit|vkShare|twitter).*"
+        }
+      ],
+      "destination": "https://music.clashgram.workers.dev/"
+    }
+  ]
+}

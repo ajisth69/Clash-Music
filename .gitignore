@@ -1,0 +1,22 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Android build outputs & local config
+android/app/build
+android/build
+android/.gradle
+android/local.properties
+.wrangler
+
+test_curl.txt
